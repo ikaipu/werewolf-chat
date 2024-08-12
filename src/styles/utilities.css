@@ -1,0 +1,25 @@
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-hover transition duration-300;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-gray-700 border border-gray-300 py-2 px-4 rounded-md hover:bg-gray-50 transition duration-300;
+  }
+
+  .input-primary {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary;
+  }
+
+  .card {
+    @apply bg-white shadow-md rounded-lg;
+  }
+
+  .card-header {
+    @apply bg-primary text-white p-4;
+  }
+
+  .card-content {
+    @apply p-4;
+  }
+}
