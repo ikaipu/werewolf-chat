@@ -6,19 +6,22 @@ import Home from './components/Home';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import ChatRoom from './components/ChatRoom';
+import { useStore } from './store/useStore';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { setUserId } = useStore();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      setUserId(currentUser ? currentUser.uid : null);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [setUserId]);
 
   if (loading) {
     return <div>Loading...</div>;

@@ -15,13 +15,14 @@ service cloud.firestore {
     match /rooms/{roomId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update, delete: if false; // ルームの更新と削除は禁止
+      allow update: if isAuthenticated() && isRoomParticipant(roomId);
+      allow delete: if false; // ルームの削除は禁止
 
       // 参加者サブコレクションへのアクセスルール
       match /participants/{userId} {
-        allow read: if isAuthenticated() && isRoomParticipant(roomId);
+        allow read: if isAuthenticated();
         allow create: if isAuthenticated() && request.resource.data.id == request.auth.uid;
-        allow delete: if isAuthenticated() && (request.auth.uid == userId || isRoomParticipant(roomId));
+        allow update, delete: if isAuthenticated() && (request.auth.uid == userId || isRoomParticipant(roomId));
       }
 
       // メッセージサブコレクションへのアクセスルール
