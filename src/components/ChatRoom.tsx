@@ -22,6 +22,7 @@ interface Participant {
 interface Message {
   id: string;
   sender: string;
+  senderName: string; // この行を追加
   content: string;
   timestamp: Timestamp;
 }
@@ -149,7 +150,8 @@ const ChatRoom: React.FC = () => {
     try {
       await addDoc(collection(db, 'rooms', roomId, 'messages'), {
         content: newMessage,
-        sender: userData.username,
+        sender: userId, // ユーザー名ではなくユーザーIDを使用
+        senderName: userData.username, // 表示用にユーザー名も保存
         timestamp: serverTimestamp(),
       });
       setNewMessage("");
@@ -198,13 +200,13 @@ const ChatRoom: React.FC = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-[#FFF8E1] p-4">
+      <div className="min-h-screen bg-[#FFF8E1] p-2 sm:p-4">
         <div className="container mx-auto max-w-2xl">
-          <Card className="bg-white shadow-md flex flex-col h-[calc(100vh-2rem)]">
-            <CardHeader className="bg-[#4CAF50] text-white">
-              <div className="flex items-center justify-between mb-2">
-                <CardTitle className="text-lg">ルーム: {roomName}</CardTitle>
-                <div className="flex space-x-2">
+          <Card className="bg-white shadow-md flex flex-col h-[calc(100vh-1rem)]">
+            <CardHeader className="bg-[#4CAF50] text-white p-2 sm:p-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2">
+                <CardTitle className="text-lg mb-2 sm:mb-0">ルーム: {roomName}</CardTitle>
+                <div className="flex flex-wrap gap-2">
                   <Button variant="outline" size="sm" onClick={copyRoomLink} className="bg-white text-[#4CAF50] hover:bg-[#E8F5E9]">
                     <LinkIcon className="h-4 w-4 mr-1" />
                     URL
@@ -219,7 +221,7 @@ const ChatRoom: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 mt-2">
                 {participants.map((participant, index) => (
                   <Badge 
                     key={index} 
@@ -236,11 +238,11 @@ const ChatRoom: React.FC = () => {
             <CardContent className="flex-grow flex flex-col p-2 overflow-hidden">
               <ScrollArea className="flex-grow">
                 {messages.map((msg) => (
-                  <div key={msg.id} className={`mb-2 ${msg.sender === userData?.username ? 'ml-auto' : 'mr-auto'}`}>
-                    <div className={`flex flex-col ${msg.sender === userData?.username ? 'items-end' : 'items-start'}`}>
-                      <span className="text-xs text-[#4CAF50]">{msg.sender}</span>
-                      <div className={`p-2 rounded-lg max-w-[80%] ${msg.sender === userData?.username ? 'bg-[#4CAF50] text-white' : 'bg-[#E8F5E9] text-[#2E7D32]'}`}>
-                        <p className="text-sm">{msg.content}</p>
+                  <div key={msg.id} className={`mb-2 ${msg.sender === userId ? 'ml-auto' : 'mr-auto'}`}>
+                    <div className={`flex flex-col ${msg.sender === userId ? 'items-end' : 'items-start'}`}>
+                      <span className="text-xs text-[#4CAF50]">{msg.senderName}</span>
+                      <div className={`p-2 rounded-lg max-w-[80%] ${msg.sender === userId ? 'bg-[#4CAF50] text-white' : 'bg-[#E8F5E9] text-[#2E7D32]'}`}>
+                        <p className="text-sm break-words">{msg.content}</p>
                       </div>
                       <span className="text-xs text-gray-400">{formatTimestamp(msg.timestamp)}</span>
                     </div>
@@ -258,7 +260,7 @@ const ChatRoom: React.FC = () => {
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                   className="flex-grow border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]"
                 />
-                <Button type="submit" onClick={sendMessage} className="bg-[#4CAF50] text-white hover:bg-[#45a049]">
+                <Button type="submit" onClick={sendMessage} className="bg-[#4CAF50] text-white hover:bg-[#45a049] px-3 py-2">
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
