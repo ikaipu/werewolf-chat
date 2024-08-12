@@ -10,11 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, LogOut, User } from "lucide-react";
 
-interface RecentRoom {
-  id: string;
-  name: string;
-}
-
 const Home: React.FC = () => {
   const [roomName, setRoomName] = useState('');
   const { userId } = useStore();

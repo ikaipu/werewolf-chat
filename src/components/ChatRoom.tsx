@@ -95,7 +95,7 @@ const ChatRoom: React.FC = () => {
   }, [roomId, navigate, userId, setCurrentRoomId, currentRoomId]);
 
   const handleJoinRoom = async () => {
-    if (!userData || !roomId) return;
+    if (!userData || !roomId || !userId) return;
 
     try {
       await setDoc(doc(db, 'rooms', roomId, 'participants', userId), {
@@ -165,7 +165,7 @@ const ChatRoom: React.FC = () => {
       await massExit(roomId);
       navigate('/');
     } catch (error) {
-      console.error("���斉退出中にエラーが発生しました: ", error);
+      console.error("斉退出中にエラーが発生しました: ", error);
     }
   };
 
