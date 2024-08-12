@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ユーザーが認証されているかどうかをチェックする関数
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // ユーザーが特定のルームの参加者であるかをチェックする関数
+    function isRoomParticipant(roomId) {
+      return exists(/databases/$(database)/documents/rooms/$(roomId)/participants/$(request.auth.uid));
+    }
+
+    // ルームドキュメントへのアクセスルール
+    match /rooms/{roomId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // ルームの更新と削除は禁止
+
+      // 参加者サブコレクションへのアクセスルール
+      match /participants/{userId} {
+        allow read: if isAuthenticated() && isRoomParticipant(roomId);
+        allow create: if isAuthenticated() && request.resource.data.id == request.auth.uid;
+        allow delete: if isAuthenticated() && (request.auth.uid == userId || isRoomParticipant(roomId));
+      }
+
+      // メッセージサブコレクションへのアクセスルール
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && isRoomParticipant(roomId);
+        allow create: if isAuthenticated() && isRoomParticipant(roomId) && request.resource.data.sender == request.auth.uid;
+        allow update, delete: if false; // メッセージの更新と削除は禁止
+      }
+    }
+
+    // ユーザードキュメントへのアクセスルール
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if false; // ユーザーの削除は禁止
+    }
+  }
+}

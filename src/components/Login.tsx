@@ -1,21 +1,26 @@
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { signInWithEmailAndPassword, AuthError } from 'firebase/auth';
 import { auth } from '../firebase';
-import { useNavigate, Link } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
-import AuthLayout from './AuthLayout';
+import { useStore } from '../store/useStore';
+import { AuthLayout } from './AuthLayout';
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { LogIn } from "lucide-react";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { setUserId } = useStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      setUserId(userCredential.user.uid);
       navigate('/');
     } catch (err) {
       const authError = err as AuthError;
@@ -30,7 +35,7 @@ const Login: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
-          <input
+          <Input
             type="email"
             id="email"
             value={email}
@@ -42,7 +47,7 @@ const Login: React.FC = () => {
         </div>
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
-          <input
+          <Input
             type="password"
             id="password"
             value={password}
@@ -52,13 +57,13 @@ const Login: React.FC = () => {
             required
           />
         </div>
-        <button
+        <Button
           type="submit"
           className="w-full bg-[#4CAF50] text-white py-2 px-4 rounded-md hover:bg-[#45a049] transition duration-300 flex items-center justify-center"
         >
           <LogIn className="mr-2" size={18} />
           ログイン
-        </button>
+        </Button>
       </form>
       <p className="mt-4 text-sm text-center text-gray-600">
         アカウントをお持ちでない方は

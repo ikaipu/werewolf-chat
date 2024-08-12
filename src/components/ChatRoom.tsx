@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { db, auth } from '../firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, getDoc, Timestamp, getDocs, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { collection, onSnapshot, query, orderBy, doc, getDoc, Timestamp, addDoc, serverTimestamp, getDocs, setDoc } from 'firebase/firestore';
+import { useUser } from '../hooks/useUser';
+import { massExit, leaveRoom } from '../utils/roomUtils';
+import { useStore } from '../store/useStore';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Send, Link as LinkIcon, LogOut } from "lucide-react";
+import { Send, Link as LinkIcon, LogOut } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 interface Participant {
   id: string;
@@ -29,47 +33,86 @@ const ChatRoom: React.FC = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [currentUsername, setCurrentUsername] = useState<string>('Anonymous');
+  const { userData, isLoading } = useUser();
+  const { userId, currentRoomId, setCurrentRoomId, setLastAccessedRoomId } = useStore();
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
 
   useEffect(() => {
-    if (!roomId || !auth.currentUser) return;
+    if (roomId) {
+      setLastAccessedRoomId(roomId);
+    }
+  }, [roomId, setLastAccessedRoomId]);
 
-    const fetchUserData = async () => {
-      const userDoc = await getDoc(doc(db, 'users', auth.currentUser!.uid));
-      if (userDoc.exists()) {
-        setCurrentUsername(userDoc.data().username || 'Anonymous');
+  useEffect(() => {
+    if (!userId) {
+      navigate('/login');
+      return;
+    }
+
+    if (!roomId) {
+      if (currentRoomId) {
+        navigate(`/chat/${currentRoomId}`);
       } else {
-        setCurrentUsername(auth.currentUser!.displayName || 'Anonymous');
+        navigate('/');
       }
-    };
+      return;
+    }
 
     const fetchRoomData = async () => {
-      const roomDoc = await getDoc(doc(db, 'rooms', roomId));
-      if (roomDoc.exists()) {
+      try {
+        const roomDoc = await getDoc(doc(db, 'rooms', roomId));
+        if (!roomDoc.exists()) {
+          setCurrentRoomId(null);
+          navigate('/');
+          return;
+        }
+
         setRoomName(roomDoc.data().name);
-        
-        // participants コレクションから参加者情報を取得
+
         const participantsSnapshot = await getDocs(collection(db, 'rooms', roomId, 'participants'));
         const participantsData = participantsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         } as Participant));
+
         setParticipants(participantsData);
 
-        // 現在のユーザーが参加者リストにいない場合、追加する
-        const currentUserParticipant = participantsData.find(p => p.id === auth.currentUser!.uid);
-        if (!currentUserParticipant) {
-          await setDoc(doc(db, 'rooms', roomId, 'participants', auth.currentUser!.uid), {
-            id: auth.currentUser!.uid,
-            name: currentUsername,
-            isHost: false
-          });
+        const isParticipant = participantsData.some(p => p.id === userId);
+        if (!isParticipant) {
+          setShowJoinDialog(true);
+        } else {
+          setCurrentRoomId(roomId);
+          setupListeners();
         }
+      } catch (error) {
+        console.error("ルームデータの取得中にエラーが発生しました: ", error);
+        setCurrentRoomId(null);
+        navigate('/');
       }
     };
 
-    fetchUserData();
     fetchRoomData();
+  }, [roomId, navigate, userId, setCurrentRoomId, currentRoomId]);
+
+  const handleJoinRoom = async () => {
+    if (!userData || !roomId) return;
+
+    try {
+      await setDoc(doc(db, 'rooms', roomId, 'participants', userId), {
+        id: userId,
+        name: userData.username,
+        isHost: false
+      });
+      setCurrentRoomId(roomId);
+      setupListeners();
+      setShowJoinDialog(false);
+    } catch (error) {
+      console.error("ルーム参加中にエラーが発生しました: ", error);
+    }
+  };
+
+  const setupListeners = () => {
+    if (!roomId) return;
 
     const messagesRef = collection(db, 'rooms', roomId, 'messages');
     const q = query(messagesRef, orderBy('timestamp', 'asc'));
@@ -88,31 +131,54 @@ const ChatRoom: React.FC = () => {
         ...doc.data()
       } as Participant));
       setParticipants(newParticipants);
+
+      if (!newParticipants.some(p => p.id === userId)) {
+        navigate('/');
+      }
     });
 
     return () => {
       unsubscribeMessages();
       unsubscribeParticipants();
     };
-  }, [roomId, currentUsername]);
+  };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !auth.currentUser || !roomId) return;
+    if (!newMessage.trim() || !userId || !roomId || !userData) return;
 
     try {
       await addDoc(collection(db, 'rooms', roomId, 'messages'), {
         content: newMessage,
-        sender: currentUsername,
+        sender: userData.username,
         timestamp: serverTimestamp(),
       });
       setNewMessage("");
     } catch (error) {
-      console.error("Error sending message: ", error);
+      console.error("メッセージ送信中にエラーが発生しました: ", error);
     }
   };
 
-  const handleLeaveRoom = () => {
-    navigate('/');
+  const handleMassExit = async () => {
+    if (!roomId || !userId) return;
+
+    try {
+      await massExit(roomId);
+      navigate('/');
+    } catch (error) {
+      console.error("���斉退出中にエラーが発生しました: ", error);
+    }
+  };
+
+  const handleLeaveRoom = async () => {
+    if (!roomId || !userId) return;
+
+    try {
+      await leaveRoom(roomId);
+      setCurrentRoomId(null);
+      navigate('/');
+    } catch (error) {
+      console.error("退出中にエラーが発生しました: ", error);
+    }
   };
 
   const copyRoomLink = () => {
@@ -126,75 +192,99 @@ const ChatRoom: React.FC = () => {
     return '';
   };
 
+  if (isLoading) {
+    return <div>読み込み中...</div>;
+  }
+
   return (
-    <div className="min-h-screen bg-[#FFF8E1] p-4">
-      <div className="container mx-auto max-w-2xl">
-        <Card className="bg-white shadow-md flex flex-col h-[calc(100vh-2rem)]">
-          <CardHeader className="bg-[#4CAF50] text-white">
-            <div className="flex items-center justify-between mb-2">
-              <Button variant="ghost" className="p-0 text-white hover:text-[#E8F5E9]" onClick={() => navigate('/')}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                ホームに戻る
-              </Button>
-              <CardTitle className="text-lg">ルーム: {roomName}</CardTitle>
-            </div>
-            <div className="flex justify-end space-x-1 mb-2">
-              <Button variant="outline" size="sm" onClick={copyRoomLink} className="bg-white text-[#4CAF50] hover:bg-[#E8F5E9]">
-                <LinkIcon className="h-4 w-4 mr-1" />
-                URL
-              </Button>
-              <Button variant="destructive" size="sm" onClick={handleLeaveRoom} className="bg-red-500 hover:bg-red-600">
-                <LogOut className="h-4 w-4 mr-1" />
-                退出
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {participants.map((participant, index) => (
-                <Badge 
-                  key={index} 
-                  variant={participant.id === auth.currentUser?.uid ? "default" : "secondary"} 
-                  className="text-xs bg-[#E8F5E9] text-[#4CAF50]"
-                >
-                  {participant.name}
-                  {participant.isHost && "👑"}
-                  {participant.id === auth.currentUser?.uid && " (あなた)"}
-                </Badge>
-              ))}
-            </div>
-          </CardHeader>
-          <CardContent className="flex-grow flex flex-col p-2 overflow-hidden">
-            <ScrollArea className="flex-grow">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`mb-2 ${msg.sender === currentUsername ? 'ml-auto' : 'mr-auto'}`}>
-                  <div className={`flex flex-col ${msg.sender === currentUsername ? 'items-end' : 'items-start'}`}>
-                    <span className="text-xs text-[#4CAF50]">{msg.sender}</span>
-                    <div className={`p-2 rounded-lg max-w-[80%] ${msg.sender === currentUsername ? 'bg-[#4CAF50] text-white' : 'bg-[#E8F5E9] text-[#2E7D32]'}`}>
-                      <p className="text-sm">{msg.content}</p>
-                    </div>
-                    <span className="text-xs text-gray-400">{formatTimestamp(msg.timestamp)}</span>
-                  </div>
+    <>
+      <div className="min-h-screen bg-[#FFF8E1] p-4">
+        <div className="container mx-auto max-w-2xl">
+          <Card className="bg-white shadow-md flex flex-col h-[calc(100vh-2rem)]">
+            <CardHeader className="bg-[#4CAF50] text-white">
+              <div className="flex items-center justify-between mb-2">
+                <CardTitle className="text-lg">ルーム: {roomName}</CardTitle>
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm" onClick={copyRoomLink} className="bg-white text-[#4CAF50] hover:bg-[#E8F5E9]">
+                    <LinkIcon className="h-4 w-4 mr-1" />
+                    URL
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={handleLeaveRoom} className="bg-red-500 hover:bg-red-600">
+                    <LogOut className="h-4 w-4 mr-1" />
+                    退出
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={handleMassExit} className="bg-red-500 hover:bg-red-600">
+                    <LogOut className="h-4 w-4 mr-1" />
+                    全員退出
+                  </Button>
                 </div>
-              ))}
-            </ScrollArea>
-          </CardContent>
-          <CardFooter className="p-2">
-            <div className="flex w-full items-center space-x-2">
-              <Input
-                type="text"
-                placeholder="メッセージを入力..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                className="flex-grow border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]"
-              />
-              <Button type="submit" onClick={sendMessage} className="bg-[#4CAF50] text-white hover:bg-[#45a049]">
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {participants.map((participant, index) => (
+                  <Badge 
+                    key={index} 
+                    variant={participant.id === userId ? "default" : "secondary"} 
+                    className="text-xs bg-[#E8F5E9] text-[#4CAF50]"
+                  >
+                    {participant.name}
+                    {participant.isHost && "👑"}
+                    {participant.id === userId && " (あなた)"}
+                  </Badge>
+                ))}
+              </div>
+            </CardHeader>
+            <CardContent className="flex-grow flex flex-col p-2 overflow-hidden">
+              <ScrollArea className="flex-grow">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`mb-2 ${msg.sender === userData?.username ? 'ml-auto' : 'mr-auto'}`}>
+                    <div className={`flex flex-col ${msg.sender === userData?.username ? 'items-end' : 'items-start'}`}>
+                      <span className="text-xs text-[#4CAF50]">{msg.sender}</span>
+                      <div className={`p-2 rounded-lg max-w-[80%] ${msg.sender === userData?.username ? 'bg-[#4CAF50] text-white' : 'bg-[#E8F5E9] text-[#2E7D32]'}`}>
+                        <p className="text-sm">{msg.content}</p>
+                      </div>
+                      <span className="text-xs text-gray-400">{formatTimestamp(msg.timestamp)}</span>
+                    </div>
+                  </div>
+                ))}
+              </ScrollArea>
+            </CardContent>
+            <CardFooter className="p-2">
+              <div className="flex w-full items-center space-x-2">
+                <Input
+                  type="text"
+                  placeholder="メッセージを入力..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  className="flex-grow border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]"
+                />
+                <Button type="submit" onClick={sendMessage} className="bg-[#4CAF50] text-white hover:bg-[#45a049]">
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
       </div>
-    </div>
+      <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
+        <DialogContent className="bg-white sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>ルームに参加しますか？</DialogTitle>
+            <DialogDescription>
+              "{roomName}" ルームに参加しますか？
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => navigate('/')}>
+              キャンセル
+            </Button>
+            <Button onClick={handleJoinRoom}>
+              参加する
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

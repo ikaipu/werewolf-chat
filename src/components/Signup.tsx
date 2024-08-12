@@ -1,71 +1,59 @@
 import React, { useState } from 'react';
-import { createUserWithEmailAndPassword, AuthError, updateProfile } from 'firebase/auth';
-import { setDoc, doc } from 'firebase/firestore';
-import { auth, db } from '../firebase';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus } from 'lucide-react';
-import AuthLayout from './AuthLayout';
+import { createUserWithEmailAndPassword, AuthError } from 'firebase/auth';
+import { auth, db } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { useStore } from '../store/useStore';
+import { AuthLayout } from './AuthLayout';
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { UserPlus } from "lucide-react";
 
 const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
+  const { setUserId } = useStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccess(false);
-    if (password !== confirmPassword) {
-      setError('パスワードが一致しません。');
-      return;
-    }
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      
-      await updateProfile(user, { displayName: username });
-      
-      await setDoc(doc(db, 'users', user.uid), {
-        email: user.email,
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
         username: username,
+        email: email,
       });
-
-      setSuccess(true);
+      setUserId(userCredential.user.uid);
+      navigate('/');
     } catch (err) {
       const authError = err as AuthError;
-      setError(`サインアップに失敗しました: ${authError.code} - ${authError.message}`);
-      console.error('サインアップエラー:', authError);
+      setError(`サインアップに失敗しました: ${authError.code}`);
+      console.error('Signup error:', authError);
     }
   };
 
   return (
-    <AuthLayout title="新しい仲間になる">
+    <AuthLayout title="どうぶつチャット">
       {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
-      {success && (
-        <p className="text-green-500 mb-4 text-center">
-          サインアップが完了しました。ログインページに移動します...
-        </p>
-      )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">ニックネーム</label>
-          <input
+          <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">ユーザー名</label>
+          <Input
             type="text"
             id="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4CAF50]"
-            placeholder="例：はなこ"
+            placeholder="ニックネーム"
             required
           />
         </div>
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
-          <input
+          <Input
             type="email"
             id="email"
             value={email}
@@ -77,7 +65,7 @@ const Signup: React.FC = () => {
         </div>
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
-          <input
+          <Input
             type="password"
             id="password"
             value={password}
@@ -87,26 +75,13 @@ const Signup: React.FC = () => {
             required
           />
         </div>
-        <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">パスワード（確認）</label>
-          <input
-            type="password"
-            id="confirmPassword"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4CAF50]"
-            placeholder="••••••••"
-            required
-          />
-        </div>
-        <button
+        <Button
           type="submit"
           className="w-full bg-[#4CAF50] text-white py-2 px-4 rounded-md hover:bg-[#45a049] transition duration-300 flex items-center justify-center"
-          disabled={success}
         >
           <UserPlus className="mr-2" size={18} />
-          新規登録
-        </button>
+          サインアップ
+        </Button>
       </form>
       <p className="mt-4 text-sm text-center text-gray-600">
         すでにアカウントをお持ちの方は

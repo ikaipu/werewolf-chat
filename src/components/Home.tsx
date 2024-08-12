@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { db, auth } from '../firebase';
+import { createRoom } from '../utils/roomUtils';
+import { useStore } from '../store/useStore';
+import { useUser } from '../hooks/useUser';
+import { auth, db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { PlusCircle, LogOut, User } from "lucide-react";
-import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
-import { onAuthStateChanged } from 'firebase/auth';
 
 interface RecentRoom {
   id: string;
@@ -15,57 +17,31 @@ interface RecentRoom {
 
 const Home: React.FC = () => {
   const [roomName, setRoomName] = useState('');
-  const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
-  const [username, setUsername] = useState<string>('Anonymous');
+  const { userId } = useStore();
+  const { userData, isLoading } = useUser();
   const navigate = useNavigate();
+  const { lastAccessedRoomId } = useStore();
+  const [lastAccessedRoom, setLastAccessedRoom] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
-    const storedRecentRooms = localStorage.getItem('recentRooms');
-    if (storedRecentRooms) {
-      setRecentRooms(JSON.parse(storedRecentRooms));
-    }
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            setUsername(userData.username || 'Anonymous');
-          } else {
-            console.error('User document does not exist');
-            setUsername(user.displayName || 'Anonymous');
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-          setUsername(user.displayName || 'Anonymous');
+    const fetchLastAccessedRoom = async () => {
+      if (lastAccessedRoomId) {
+        const roomDoc = await getDoc(doc(db, 'rooms', lastAccessedRoomId));
+        if (roomDoc.exists()) {
+          setLastAccessedRoom({ id: roomDoc.id, name: roomDoc.data().name });
         }
-      } else {
-        navigate('/login');
       }
-    });
-
-    return () => unsubscribe();
-  }, [navigate]);
+    };
+    fetchLastAccessedRoom();
+  }, [lastAccessedRoomId]);
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!roomName.trim() || !auth.currentUser) return;
+    if (!roomName.trim() || !userData?.username || !userId) return;
 
     try {
-      const roomRef = await addDoc(collection(db, 'rooms'), {
-        name: roomName,
-        createdAt: serverTimestamp(),
-        createdBy: auth.currentUser.uid,
-        participants: [{ id: auth.currentUser.uid, username: username }]
-      });
-
-      const newRoom = { id: roomRef.id, name: roomName };
-      const updatedRecentRooms = [newRoom, ...recentRooms.filter(room => room.id !== newRoom.id)].slice(0, 5);
-      setRecentRooms(updatedRecentRooms);
-      localStorage.setItem('recentRooms', JSON.stringify(updatedRecentRooms));
-
-      navigate(`/chat/${roomRef.id}`);
+      const roomId = await createRoom(roomName, userData.username);
+      navigate(`/chat/${roomId}`);
     } catch (error) {
       console.error('ルーム作成中にエラーが発生しました:', error);
     }
@@ -76,6 +52,10 @@ const Home: React.FC = () => {
     navigate('/login');
   };
 
+  if (isLoading) {
+    return <div>読み込み中...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-[#FFF8E1] p-4">
       <div className="container mx-auto max-w-md">
@@ -83,36 +63,32 @@ const Home: React.FC = () => {
           <h1 className="text-2xl font-bold">どうぶつチャット</h1>
           <div className="flex items-center space-x-2 text-sm">
             <User className="h-4 w-4" />
-            <span>{username}</span>
+            <span>{userData?.username || 'Anonymous'}</span>
           </div>
         </div>
         
-        <Card className="mb-6 bg-white shadow-md">
-          <CardHeader>
-            <CardTitle className="text-[#4CAF50]">最近のルーム</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {recentRooms.map((room) => (
-                <li key={room.id} className="bg-[#E8F5E9] p-2 rounded">
-                  <Link 
-                    to={`/chat/${room.id}`} 
-                    className="block text-center hover:bg-[#C8E6C9] transition-colors text-[#2E7D32]"
-                  >
-                    {room.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+        {lastAccessedRoom && (
+          <Card className="mb-6 bg-white shadow-md">
+            <CardHeader>
+              <CardTitle className="text-[#4CAF50]">最後に参加したルーム</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Link 
+                to={`/chat/${lastAccessedRoom.id}`} 
+                className="block text-center hover:bg-[#C8E6C9] transition-colors text-[#2E7D32] p-2 rounded"
+              >
+                {lastAccessedRoom.name}
+              </Link>
+            </CardContent>
+          </Card>
+        )}
         
         <Card className="mb-6 bg-white shadow-md">
           <CardHeader>
             <CardTitle className="text-[#4CAF50]">新しいルームを作成</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <form onSubmit={handleCreateRoom} className="space-y-4">
               <Input
                 type="text"
                 value={roomName}
@@ -121,12 +97,12 @@ const Home: React.FC = () => {
                 className="border-[#4CAF50] focus:ring-[#4CAF50]"
               />
               <Button 
-                onClick={handleCreateRoom}
+                type="submit"
                 className="w-full bg-[#4CAF50] text-white hover:bg-[#45a049]"
               >
                 <PlusCircle className="mr-2 h-4 w-4" /> ルームを作成
               </Button>
-            </div>
+            </form>
           </CardContent>
         </Card>
         

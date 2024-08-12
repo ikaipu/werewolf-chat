@@ -67,3 +67,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+.DialogOverlay {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.DialogContent {
+  background-color: white;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}

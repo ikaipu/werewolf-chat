@@ -7,7 +7,7 @@ interface AuthLayoutProps {
   title: string;
 }
 
-const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title }) => {
+export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title }) => {
   return (
     <div className="min-h-screen bg-[#FFF8E1] flex flex-col justify-center items-center p-4 relative overflow-hidden">
       <img src={backgroundSvg} alt="背景" className="absolute inset-0 w-full h-full object-cover" />
@@ -22,5 +22,3 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title }) => {
     </div>
   );
 };
-
-export default AuthLayout;
