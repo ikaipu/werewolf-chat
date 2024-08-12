@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, getDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, getDoc, Timestamp, getDocs, setDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -47,8 +47,24 @@ const ChatRoom: React.FC = () => {
       const roomDoc = await getDoc(doc(db, 'rooms', roomId));
       if (roomDoc.exists()) {
         setRoomName(roomDoc.data().name);
-        const participantsData = roomDoc.data().participants || [];
+        
+        // participants コレクションから参加者情報を取得
+        const participantsSnapshot = await getDocs(collection(db, 'rooms', roomId, 'participants'));
+        const participantsData = participantsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Participant));
         setParticipants(participantsData);
+
+        // 現在のユーザーが参加者リストにいない場合、追加する
+        const currentUserParticipant = participantsData.find(p => p.id === auth.currentUser!.uid);
+        if (!currentUserParticipant) {
+          await setDoc(doc(db, 'rooms', roomId, 'participants', auth.currentUser!.uid), {
+            id: auth.currentUser!.uid,
+            name: currentUsername,
+            isHost: false
+          });
+        }
       }
     };
 
@@ -57,7 +73,7 @@ const ChatRoom: React.FC = () => {
 
     const messagesRef = collection(db, 'rooms', roomId, 'messages');
     const q = query(messagesRef, orderBy('timestamp', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeMessages = onSnapshot(q, (snapshot) => {
       const newMessages = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -65,8 +81,20 @@ const ChatRoom: React.FC = () => {
       setMessages(newMessages);
     });
 
-    return () => unsubscribe();
-  }, [roomId]);
+    const participantsRef = collection(db, 'rooms', roomId, 'participants');
+    const unsubscribeParticipants = onSnapshot(participantsRef, (snapshot) => {
+      const newParticipants = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Participant));
+      setParticipants(newParticipants);
+    });
+
+    return () => {
+      unsubscribeMessages();
+      unsubscribeParticipants();
+    };
+  }, [roomId, currentUsername]);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !auth.currentUser || !roomId) return;
@@ -84,13 +112,11 @@ const ChatRoom: React.FC = () => {
   };
 
   const handleLeaveRoom = () => {
-    // ルームを退出する処理を実装
     navigate('/');
   };
 
   const copyRoomLink = () => {
     navigator.clipboard.writeText(`${window.location.origin}/chat/${roomId}`);
-    // TODO: コピー成功のフィードバックを表示
   };
 
   const formatTimestamp = (timestamp: Timestamp) => {
@@ -102,7 +128,7 @@ const ChatRoom: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#FFF8E1] p-4">
-      <div className="container mx-auto max-w-md">
+      <div className="container mx-auto max-w-2xl">
         <Card className="bg-white shadow-md flex flex-col h-[calc(100vh-2rem)]">
           <CardHeader className="bg-[#4CAF50] text-white">
             <div className="flex items-center justify-between mb-2">
@@ -159,7 +185,7 @@ const ChatRoom: React.FC = () => {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                className="flex-grow border-[#4CAF50] focus:ring-[#4CAF50]"
+                className="flex-grow border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]"
               />
               <Button type="submit" onClick={sendMessage} className="bg-[#4CAF50] text-white hover:bg-[#45a049]">
                 <Send className="h-4 w-4" />

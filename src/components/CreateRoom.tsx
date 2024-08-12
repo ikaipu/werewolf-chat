@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, LogOut, User } from "lucide-react";
-import { collection, addDoc, serverTimestamp, getDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDoc, doc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 
 interface RecentRoom {
@@ -16,7 +16,7 @@ interface RecentRoom {
 const CreateRoom: React.FC = () => {
   const [roomName, setRoomName] = useState('');
   const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
-  const [username, setUsername] = useState<string>('Anonymous');
+  const [username, setUsername] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,17 +28,18 @@ const CreateRoom: React.FC = () => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            setUsername(userData.username || 'Anonymous');
+            setUsername(userData.username);
           } else {
-            console.error('User document does not exist');
-            setUsername(user.displayName || 'Anonymous');
+            console.error('ユーザードキュメントが見つかりません');
+            navigate('/login');
           }
         } catch (error) {
-          console.error('Error fetching user data:', error);
-          setUsername(user.displayName || 'Anonymous');
+          console.error('ユーザー情報の取得に失敗しました:', error);
+          navigate('/login');
         }
       } else {
         navigate('/login');
@@ -47,6 +48,10 @@ const CreateRoom: React.FC = () => {
 
     return () => unsubscribe();
   }, [navigate]);
+
+  if (!username) {
+    return <div>Loading...</div>;
+  }
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +62,12 @@ const CreateRoom: React.FC = () => {
         name: roomName,
         createdAt: serverTimestamp(),
         createdBy: auth.currentUser.uid,
-        participants: [{ id: auth.currentUser.uid, username: username }]
+      });
+
+      await setDoc(doc(db, 'rooms', roomRef.id, 'participants', auth.currentUser.uid), {
+        id: auth.currentUser.uid,
+        name: username,
+        isHost: true
       });
 
       const newRoom = { id: roomRef.id, name: roomName };

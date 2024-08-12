@@ -3,9 +3,8 @@ import { createUserWithEmailAndPassword, AuthError, updateProfile } from 'fireba
 import { setDoc, doc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { useNavigate, Link } from 'react-router-dom';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { UserPlus } from 'lucide-react';
+import AuthLayout from './AuthLayout';
 
 const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,11 +12,13 @@ const Signup: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess(false);
     if (password !== confirmPassword) {
       setError('パスワードが一致しません。');
       return;
@@ -33,85 +34,85 @@ const Signup: React.FC = () => {
         username: username,
       });
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      navigate('/');
+      setSuccess(true);
     } catch (err) {
       const authError = err as AuthError;
       setError(`サインアップに失敗しました: ${authError.code} - ${authError.message}`);
-      console.error('Signup error:', authError);
+      console.error('サインアップエラー:', authError);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF8E1] p-4">
-      <div className="container mx-auto max-w-md">
-        <Card className="bg-white shadow-md">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-[#4CAF50]">どうぶつチャット サインアップ</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {error && <p className="text-red-500 mb-4">{error}</p>}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block mb-2 text-[#4CAF50]">メールアドレス</label>
-                <Input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="border-[#4CAF50] focus:ring-[#4CAF50]"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="username" className="block mb-2 text-[#4CAF50]">ユーザー名</label>
-                <Input
-                  type="text"
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="border-[#4CAF50] focus:ring-[#4CAF50]"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="block mb-2 text-[#4CAF50]">パスワード</label>
-                <Input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="border-[#4CAF50] focus:ring-[#4CAF50]"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="confirmPassword" className="block mb-2 text-[#4CAF50]">パスワード（確認）</label>
-                <Input
-                  type="password"
-                  id="confirmPassword"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="border-[#4CAF50] focus:ring-[#4CAF50]"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full bg-[#4CAF50] text-white hover:bg-[#45a049]">
-                サインアップ
-              </Button>
-            </form>
-            <p className="mt-4 text-center text-[#4CAF50]">
-              すでにアカウントをお持ちの方は
-              <Link to="/login" className="text-[#2E7D32] hover:underline">
-                こちらからログイン
-              </Link>
-              してください。
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <AuthLayout title="新しい仲間になる">
+      {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
+      {success && (
+        <p className="text-green-500 mb-4 text-center">
+          サインアップが完了しました。ログインページに移動します...
+        </p>
+      )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">ニックネーム</label>
+          <input
+            type="text"
+            id="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4CAF50]"
+            placeholder="例：はなこ"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4CAF50]"
+            placeholder="example@email.com"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4CAF50]"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">パスワード（確認）</label>
+          <input
+            type="password"
+            id="confirmPassword"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4CAF50]"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          className="w-full bg-[#4CAF50] text-white py-2 px-4 rounded-md hover:bg-[#45a049] transition duration-300 flex items-center justify-center"
+          disabled={success}
+        >
+          <UserPlus className="mr-2" size={18} />
+          新規登録
+        </button>
+      </form>
+      <p className="mt-4 text-sm text-center text-gray-600">
+        すでにアカウントをお持ちの方は
+        <Link to="/login" className="text-[#4CAF50] hover:underline">こちら</Link>
+      </p>
+    </AuthLayout>
   );
 };
 

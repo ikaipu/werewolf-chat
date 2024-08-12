@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { signInWithEmailAndPassword, AuthError } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useNavigate, Link } from 'react-router-dom';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { LogIn } from 'lucide-react';
+import AuthLayout from './AuthLayout';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -26,52 +25,46 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF8E1] p-4">
-      <div className="container mx-auto max-w-md">
-        <Card className="bg-white shadow-md">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-[#4CAF50]">どうぶつチャット ログイン</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {error && <p className="text-red-500 mb-4">{error}</p>}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block mb-2 text-[#4CAF50]">メールアドレス</label>
-                <Input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="border-[#4CAF50] focus:ring-[#4CAF50]"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="block mb-2 text-[#4CAF50]">パスワード</label>
-                <Input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="border-[#4CAF50] focus:ring-[#4CAF50]"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full bg-[#4CAF50] text-white hover:bg-[#45a049]">
-                ログイン
-              </Button>
-            </form>
-            <p className="mt-4 text-center text-[#4CAF50]">
-              アカウントをお持ちでない方は
-              <Link to="/signup" className="text-[#2E7D32] hover:underline">
-                こちらからサインアップ
-              </Link>
-              してください。
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <AuthLayout title="どうぶつチャット">
+      {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4CAF50]"
+            placeholder="example@email.com"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4CAF50]"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          className="w-full bg-[#4CAF50] text-white py-2 px-4 rounded-md hover:bg-[#45a049] transition duration-300 flex items-center justify-center"
+        >
+          <LogIn className="mr-2" size={18} />
+          ログイン
+        </button>
+      </form>
+      <p className="mt-4 text-sm text-center text-gray-600">
+        アカウントをお持ちでない方は
+        <Link to="/signup" className="text-[#4CAF50] hover:underline">こちら</Link>
+      </p>
+    </AuthLayout>
   );
 };
 
