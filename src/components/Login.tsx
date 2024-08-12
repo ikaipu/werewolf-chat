@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, AuthError } from 'firebase/auth';
 import { auth } from '../firebase';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { useNavigate, Link } from 'react-router-dom';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -19,53 +18,59 @@ const Login: React.FC = () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       navigate('/');
-    } catch (error) {
-      setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。');
+    } catch (err) {
+      const authError = err as AuthError;
+      setError(`ログインに失敗しました: ${authError.code} - ${authError.message}`);
+      console.error('Login error:', authError);
     }
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-md">
-      <Card>
-        <CardHeader>
-          <CardTitle>ログイン</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <Label htmlFor="email">メールアドレス</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <Label htmlFor="password">パスワード</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
+    <div className="min-h-screen bg-[#FFF8E1] p-4">
+      <div className="container mx-auto max-w-md">
+        <Card className="bg-white shadow-md">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-[#4CAF50]">どうぶつチャット ログイン</CardTitle>
+          </CardHeader>
+          <CardContent>
             {error && <p className="text-red-500 mb-4">{error}</p>}
-            <Button type="submit" className="w-full">ログイン</Button>
-          </form>
-        </CardContent>
-        <CardFooter>
-          <p className="text-sm text-gray-600">
-            アカウントをお持ちでない場合は、
-            <Button variant="link" className="p-0" onClick={() => navigate('/signup')}>
-              サインアップ
-            </Button>
-            してください。
-          </p>
-        </CardFooter>
-      </Card>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="email" className="block mb-2 text-[#4CAF50]">メールアドレス</label>
+                <Input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="border-[#4CAF50] focus:ring-[#4CAF50]"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="block mb-2 text-[#4CAF50]">パスワード</label>
+                <Input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="border-[#4CAF50] focus:ring-[#4CAF50]"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full bg-[#4CAF50] text-white hover:bg-[#45a049]">
+                ログイン
+              </Button>
+            </form>
+            <p className="mt-4 text-center text-[#4CAF50]">
+              アカウントをお持ちでない方は
+              <Link to="/signup" className="text-[#2E7D32] hover:underline">
+                こちらからサインアップ
+              </Link>
+              してください。
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

@@ -57,7 +57,7 @@ const CreateRoom: React.FC = () => {
         name: roomName,
         createdAt: serverTimestamp(),
         createdBy: auth.currentUser.uid,
-        participants: [{ id: auth.currentUser.uid, username: auth.currentUser.displayName || 'Anonymous' }]
+        participants: [{ id: auth.currentUser.uid, username: username }]
       });
 
       const newRoom = { id: roomRef.id, name: roomName };
@@ -77,64 +77,67 @@ const CreateRoom: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto p-4 space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">チャットルーム作成</h1>
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <User className="h-4 w-4" />
-          <span>{username}</span>
-        </div>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>最近のルーム</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2">
-            {recentRooms.map((room) => (
-              <li key={room.id} className="bg-gray-100 p-2 rounded">
-                <Link 
-                  to={`/chat/${room.id}`} 
-                  className="block text-center hover:bg-gray-200 transition-colors"
-                >
-                  {room.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>新しいルームを作成</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Input
-              type="text"
-              value={roomName}
-              onChange={(e) => setRoomName(e.target.value)}
-              placeholder="例: プロジェクト討論"
-            />
-            <Button 
-              onClick={handleCreateRoom}
-              className="w-full bg-gray-700 text-white hover:bg-gray-600"
-            >
-              <PlusCircle className="mr-2 h-4 w-4" /> ルームを作成
-            </Button>
+    <div className="min-h-screen bg-[#FFF8E1] p-4">
+      <div className="container mx-auto max-w-md">
+        <div className="flex justify-between items-center mb-6 bg-[#4CAF50] text-white p-4 rounded-lg shadow-md">
+          <h1 className="text-2xl font-bold">どうぶつチャット</h1>
+          <div className="flex items-center space-x-2 text-sm">
+            <User className="h-4 w-4" />
+            <span>{username}</span>
           </div>
-        </CardContent>
-      </Card>
-      
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={handleLogout}
-      >
-        <LogOut className="mr-2 h-4 w-4" /> ログアウト
-      </Button>
+        </div>
+        
+        <Card className="mb-6 bg-white shadow-md">
+          <CardHeader>
+            <CardTitle className="text-[#4CAF50]">最近のルーム</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {recentRooms.map((room) => (
+                <li key={room.id} className="bg-[#E8F5E9] p-2 rounded">
+                  <Link 
+                    to={`/chat/${room.id}`} 
+                    className="block text-center hover:bg-[#C8E6C9] transition-colors text-[#2E7D32]"
+                  >
+                    {room.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+        
+        <Card className="mb-6 bg-white shadow-md">
+          <CardHeader>
+            <CardTitle className="text-[#4CAF50]">新しいルームを作成</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Input
+                type="text"
+                value={roomName}
+                onChange={(e) => setRoomName(e.target.value)}
+                placeholder="例: キリンの部屋"
+                className="border-[#4CAF50] focus:ring-[#4CAF50]"
+              />
+              <Button 
+                onClick={handleCreateRoom}
+                className="w-full bg-[#4CAF50] text-white hover:bg-[#45a049]"
+              >
+                <PlusCircle className="mr-2 h-4 w-4" /> ルームを作成
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Button
+          variant="outline"
+          className="w-full border-[#4CAF50] text-[#4CAF50] hover:bg-[#E8F5E9]"
+          onClick={handleLogout}
+        >
+          <LogOut className="mr-2 h-4 w-4" /> ログアウト
+        </Button>
+      </div>
     </div>
   );
 };

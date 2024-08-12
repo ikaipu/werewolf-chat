@@ -101,71 +101,73 @@ const ChatRoom: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-md mx-auto">
-      <Card className="flex-grow flex flex-col">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between mb-2">
-            <Button variant="ghost" className="p-0" onClick={() => navigate('/')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              ホームに戻る
-            </Button>
-            <CardTitle className="text-lg">ルーム: {roomName}</CardTitle>
-          </div>
-          <div className="flex justify-end space-x-1 mb-2">
-            <Button variant="outline" size="sm" onClick={copyRoomLink}>
-              <LinkIcon className="h-4 w-4 mr-1" />
-              URL
-            </Button>
-            <Button variant="destructive" size="sm" onClick={handleLeaveRoom}>
-              <LogOut className="h-4 w-4 mr-1" />
-              退出
-            </Button>
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {participants.map((participant, index) => (
-              <Badge 
-                key={index} 
-                variant={participant.id === auth.currentUser?.uid ? "default" : "secondary"} 
-                className="text-xs"
-              >
-                {participant.name}
-                {participant.isHost && "👑"}
-                {participant.id === auth.currentUser?.uid && " (あなた)"}
-              </Badge>
-            ))}
-          </div>
-        </CardHeader>
-        <CardContent className="flex-grow flex flex-col p-2">
-          <ScrollArea className="flex-grow">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`mb-2 ${msg.sender === currentUsername ? 'ml-auto' : 'mr-auto'}`}>
-                <div className={`flex flex-col ${msg.sender === currentUsername ? 'items-end' : 'items-start'}`}>
-                  <span className="text-xs text-gray-500">{msg.sender}</span>
-                  <div className={`p-2 rounded-lg max-w-[80%] ${msg.sender === currentUsername ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
-                    <p className="text-sm">{msg.content}</p>
+    <div className="min-h-screen bg-[#FFF8E1] p-4">
+      <div className="container mx-auto max-w-md">
+        <Card className="bg-white shadow-md flex flex-col h-[calc(100vh-2rem)]">
+          <CardHeader className="bg-[#4CAF50] text-white">
+            <div className="flex items-center justify-between mb-2">
+              <Button variant="ghost" className="p-0 text-white hover:text-[#E8F5E9]" onClick={() => navigate('/')}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                ホームに戻る
+              </Button>
+              <CardTitle className="text-lg">ルーム: {roomName}</CardTitle>
+            </div>
+            <div className="flex justify-end space-x-1 mb-2">
+              <Button variant="outline" size="sm" onClick={copyRoomLink} className="bg-white text-[#4CAF50] hover:bg-[#E8F5E9]">
+                <LinkIcon className="h-4 w-4 mr-1" />
+                URL
+              </Button>
+              <Button variant="destructive" size="sm" onClick={handleLeaveRoom} className="bg-red-500 hover:bg-red-600">
+                <LogOut className="h-4 w-4 mr-1" />
+                退出
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {participants.map((participant, index) => (
+                <Badge 
+                  key={index} 
+                  variant={participant.id === auth.currentUser?.uid ? "default" : "secondary"} 
+                  className="text-xs bg-[#E8F5E9] text-[#4CAF50]"
+                >
+                  {participant.name}
+                  {participant.isHost && "👑"}
+                  {participant.id === auth.currentUser?.uid && " (あなた)"}
+                </Badge>
+              ))}
+            </div>
+          </CardHeader>
+          <CardContent className="flex-grow flex flex-col p-2 overflow-hidden">
+            <ScrollArea className="flex-grow">
+              {messages.map((msg) => (
+                <div key={msg.id} className={`mb-2 ${msg.sender === currentUsername ? 'ml-auto' : 'mr-auto'}`}>
+                  <div className={`flex flex-col ${msg.sender === currentUsername ? 'items-end' : 'items-start'}`}>
+                    <span className="text-xs text-[#4CAF50]">{msg.sender}</span>
+                    <div className={`p-2 rounded-lg max-w-[80%] ${msg.sender === currentUsername ? 'bg-[#4CAF50] text-white' : 'bg-[#E8F5E9] text-[#2E7D32]'}`}>
+                      <p className="text-sm">{msg.content}</p>
+                    </div>
+                    <span className="text-xs text-gray-400">{formatTimestamp(msg.timestamp)}</span>
                   </div>
-                  <span className="text-xs text-gray-400">{formatTimestamp(msg.timestamp)}</span>
                 </div>
-              </div>
-            ))}
-          </ScrollArea>
-        </CardContent>
-        <CardFooter className="p-2">
-          <div className="flex w-full items-center space-x-2">
-            <Input
-              type="text"
-              placeholder="メッセージを入力..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-              className="flex-grow"
-            />
-            <Button type="submit" onClick={sendMessage}>
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
+              ))}
+            </ScrollArea>
+          </CardContent>
+          <CardFooter className="p-2">
+            <div className="flex w-full items-center space-x-2">
+              <Input
+                type="text"
+                placeholder="メッセージを入力..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                className="flex-grow border-[#4CAF50] focus:ring-[#4CAF50]"
+              />
+              <Button type="submit" onClick={sendMessage} className="bg-[#4CAF50] text-white hover:bg-[#45a049]">
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 };
