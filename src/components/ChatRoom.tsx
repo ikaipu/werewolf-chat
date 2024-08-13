@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Send, Link as LinkIcon, LogOut } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { NavigateFunction } from 'react-router-dom';
 
 interface Participant {
   id: string;
@@ -22,38 +23,37 @@ interface Participant {
 interface Message {
   id: string;
   sender: string;
-  senderName: string; // この行を追加
+  senderName: string;
   content: string;
   timestamp: Timestamp;
 }
 
-const ChatRoom: React.FC = () => {
-  const { roomId } = useParams<{ roomId: string }>();
-  const navigate = useNavigate();
+const useRoomData = (
+  roomId: string | undefined,
+  userId: string | undefined,
+  navigate: NavigateFunction,
+  setCurrentRoomId: (roomId: string | null) => void,
+  setLastAccessedRoomId: (roomId: string) => void,
+  currentRoomId: string | null
+) => {
   const [roomName, setRoomName] = useState("Loading...");
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const { userData, isLoading } = useUser();
-  const { userId, currentRoomId, setCurrentRoomId, setLastAccessedRoomId } = useStore();
   const [showJoinDialog, setShowJoinDialog] = useState(false);
 
   useEffect(() => {
-    if (roomId) {
-      setLastAccessedRoomId(roomId);
-    }
-  }, [roomId, setLastAccessedRoomId]);
-
-  useEffect(() => {
+    console.log("useRoomData useEffect triggered", { roomId, userId, currentRoomId });
     if (!userId) {
+      console.log("No userId, redirecting to login");
       navigate('/login');
       return;
     }
 
     if (!roomId) {
+      console.log("No roomId", { currentRoomId });
       if (currentRoomId) {
+        console.log("Redirecting to current room", currentRoomId);
         navigate(`/chat/${currentRoomId}`);
       } else {
+        console.log("Redirecting to home");
         navigate('/');
       }
       return;
@@ -61,8 +61,10 @@ const ChatRoom: React.FC = () => {
 
     const fetchRoomData = async () => {
       try {
+        console.log("Fetching room data for", roomId);
         const roomDoc = await getDoc(doc(db, 'rooms', roomId));
         if (!roomDoc.exists()) {
+          console.log("Room does not exist, redirecting to home");
           setCurrentRoomId(null);
           navigate('/');
           return;
@@ -76,17 +78,17 @@ const ChatRoom: React.FC = () => {
           ...doc.data()
         } as Participant));
 
-        setParticipants(participantsData);
-
         const isParticipant = participantsData.some(p => p.id === userId);
+        console.log("Is user a participant?", isParticipant);
         if (!isParticipant) {
+          console.log("User is not a participant, showing join dialog");
           setShowJoinDialog(true);
         } else {
+          console.log("User is a participant, setting current room id");
           setCurrentRoomId(roomId);
-          setupListeners();
         }
       } catch (error) {
-        console.error("ルームデータの取得中にエラーが発生しました: ", error);
+        console.error("Error fetching room data: ", error);
         setCurrentRoomId(null);
         navigate('/');
       }
@@ -95,24 +97,13 @@ const ChatRoom: React.FC = () => {
     fetchRoomData();
   }, [roomId, navigate, userId, setCurrentRoomId, currentRoomId]);
 
-  const handleJoinRoom = async () => {
-    if (!userData || !roomId || !userId) return;
+  return { roomName, showJoinDialog, setShowJoinDialog };
+};
 
-    try {
-      await setDoc(doc(db, 'rooms', roomId, 'participants', userId), {
-        id: userId,
-        name: userData.username,
-        isHost: false
-      });
-      setCurrentRoomId(roomId);
-      setupListeners();
-      setShowJoinDialog(false);
-    } catch (error) {
-      console.error("ルーム参加中にエラーが発生しました: ", error);
-    }
-  };
+const useMessages = (roomId: string | undefined) => {
+  const [messages, setMessages] = useState<Message[]>([]);
 
-  const setupListeners = () => {
+  useEffect(() => {
     if (!roomId) return;
 
     const messagesRef = collection(db, 'rooms', roomId, 'messages');
@@ -125,6 +116,24 @@ const ChatRoom: React.FC = () => {
       setMessages(newMessages);
     });
 
+    return () => {
+      unsubscribeMessages();
+    };
+  }, [roomId]);
+
+  return messages;
+};
+
+const useParticipants = (
+  roomId: string | undefined,
+  userId: string | undefined
+) => {
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [isParticipant, setIsParticipant] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!roomId || !userId) return;
+
     const participantsRef = collection(db, 'rooms', roomId, 'participants');
     const unsubscribeParticipants = onSnapshot(participantsRef, (snapshot) => {
       const newParticipants = snapshot.docs.map(doc => ({
@@ -132,16 +141,51 @@ const ChatRoom: React.FC = () => {
         ...doc.data()
       } as Participant));
       setParticipants(newParticipants);
-
-      if (!newParticipants.some(p => p.id === userId)) {
-        navigate('/');
-      }
+      setIsParticipant(newParticipants.some(p => p.id === userId));
     });
 
     return () => {
-      unsubscribeMessages();
       unsubscribeParticipants();
     };
+  }, [roomId, userId]);
+
+  return { participants, isParticipant };
+};
+
+const ChatRoom: React.FC = () => {
+  const { roomId } = useParams<{ roomId: string }>();
+  const navigate = useNavigate();
+  const { userData, isLoading } = useUser();
+  const { userId, currentRoomId, setCurrentRoomId, setLastAccessedRoomId } = useStore();
+  const [newMessage, setNewMessage] = useState("");
+  const { roomName, showJoinDialog, setShowJoinDialog } = useRoomData(roomId ?? undefined, userId ?? undefined, navigate, setCurrentRoomId, setLastAccessedRoomId, currentRoomId);
+  const messages = useMessages(roomId);
+  const { participants, isParticipant } = useParticipants(roomId ?? undefined, userId ?? undefined);
+
+  useEffect(() => {
+    if (isParticipant === false) {
+      setShowJoinDialog(true);
+    }
+  }, [isParticipant, setShowJoinDialog]);
+
+  console.log("ChatRoom rendered", { roomId, userId, currentRoomId, isLoading, isParticipant });
+
+  const handleJoinRoom = async () => {
+    console.log("Joining room", { userData, roomId, userId });
+    if (!userData || !roomId || !userId) return;
+
+    try {
+      await setDoc(doc(db, 'rooms', roomId, 'participants', userId), {
+        id: userId,
+        name: userData.username,
+        isHost: false
+      });
+      console.log("Successfully joined room");
+      setCurrentRoomId(roomId);
+      setShowJoinDialog(false);
+    } catch (error) {
+      console.error("Error joining room: ", error);
+    }
   };
 
   const sendMessage = async () => {
@@ -150,8 +194,8 @@ const ChatRoom: React.FC = () => {
     try {
       await addDoc(collection(db, 'rooms', roomId, 'messages'), {
         content: newMessage,
-        sender: userId, // ユーザー名ではなくユーザーIDを使用
-        senderName: userData.username, // 表示用にユーザー名も保存
+        sender: userId,
+        senderName: userData.username,
         timestamp: serverTimestamp(),
       });
       setNewMessage("");
@@ -167,7 +211,7 @@ const ChatRoom: React.FC = () => {
       await massExit(roomId);
       navigate('/');
     } catch (error) {
-      console.error("斉退出中にエラーが発生しました: ", error);
+      console.error("一斉退出中にエラーが発生しました: ", error);
     }
   };
 
@@ -194,7 +238,8 @@ const ChatRoom: React.FC = () => {
     return '';
   };
 
-  if (isLoading) {
+  if (isLoading || isParticipant === null) {
+    console.log("Still loading data");
     return <div>読み込み中...</div>;
   }
 

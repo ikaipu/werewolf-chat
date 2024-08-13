@@ -13,6 +13,7 @@ service cloud.firestore {
 
     // ルームドキュメントへのアクセスルール
     match /rooms/{roomId} {
+      // ルームの基本情報（名前など）の読み取りを許可
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && isRoomParticipant(roomId);
