@@ -33,7 +33,6 @@ const useRoomData = (
   userId: string | undefined,
   navigate: NavigateFunction,
   setCurrentRoomId: (roomId: string | null) => void,
-  setLastAccessedRoomId: (roomId: string) => void,
   currentRoomId: string | null
 ) => {
   const [roomName, setRoomName] = useState("Loading...");
@@ -100,11 +99,11 @@ const useRoomData = (
   return { roomName, showJoinDialog, setShowJoinDialog };
 };
 
-const useMessages = (roomId: string | undefined) => {
+const useMessages = (roomId: string | undefined, isParticipant: boolean | null) => {
   const [messages, setMessages] = useState<Message[]>([]);
 
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId || !isParticipant) return;
 
     const messagesRef = collection(db, 'rooms', roomId, 'messages');
     const q = query(messagesRef, orderBy('timestamp', 'asc'));
@@ -119,9 +118,9 @@ const useMessages = (roomId: string | undefined) => {
     return () => {
       unsubscribeMessages();
     };
-  }, [roomId]);
+  }, [roomId, isParticipant]);
 
-  return messages;
+  return { messages, setMessages };
 };
 
 const useParticipants = (
@@ -156,11 +155,11 @@ const ChatRoom: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { userData, isLoading } = useUser();
-  const { userId, currentRoomId, setCurrentRoomId, setLastAccessedRoomId } = useStore();
+  const { userId, currentRoomId, setCurrentRoomId } = useStore();
   const [newMessage, setNewMessage] = useState("");
-  const { roomName, showJoinDialog, setShowJoinDialog } = useRoomData(roomId ?? undefined, userId ?? undefined, navigate, setCurrentRoomId, setLastAccessedRoomId, currentRoomId);
-  const messages = useMessages(roomId);
+  const { roomName, showJoinDialog, setShowJoinDialog } = useRoomData(roomId ?? undefined, userId ?? undefined, navigate, setCurrentRoomId, currentRoomId);
   const { participants, isParticipant } = useParticipants(roomId ?? undefined, userId ?? undefined);
+  const { messages, setMessages } = useMessages(roomId, isParticipant);
 
   useEffect(() => {
     if (isParticipant === false) {
@@ -175,14 +174,38 @@ const ChatRoom: React.FC = () => {
     if (!userData || !roomId || !userId) return;
 
     try {
+      // 参加者として登録
       await setDoc(doc(db, 'rooms', roomId, 'participants', userId), {
         id: userId,
         name: userData.username,
         isHost: false
       });
       console.log("Successfully joined room");
-      setCurrentRoomId(roomId);
-      setShowJoinDialog(false);
+
+      // 参加者リストを即座に更新
+      const participantsRef = collection(db, 'rooms', roomId, 'participants');
+      const participantsSnapshot = await getDocs(participantsRef);
+      const newParticipants = participantsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Participant));
+      
+      // 参加確認
+      const isNewParticipant = newParticipants.some(p => p.id === userId);
+      if (isNewParticipant) {
+        // メッセージを即座に取得して表示
+        const messagesRef = collection(db, 'rooms', roomId, 'messages');
+        const q = query(messagesRef, orderBy('timestamp', 'asc'));
+        const messagesSnapshot = await getDocs(q);
+        const newMessages = messagesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Message));
+        setMessages(newMessages);
+        
+        setCurrentRoomId(roomId);
+        setShowJoinDialog(false);
+      }
     } catch (error) {
       console.error("Error joining room: ", error);
     }
@@ -274,7 +297,7 @@ const ChatRoom: React.FC = () => {
                     className="text-xs bg-[#E8F5E9] text-[#4CAF50]"
                   >
                     {participant.name}
-                    {participant.isHost && "👑"}
+                    {participant.isHost}
                     {participant.id === userId && " (あなた)"}
                   </Badge>
                 ))}
