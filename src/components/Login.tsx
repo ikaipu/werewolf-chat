@@ -65,10 +65,16 @@ const Login: React.FC = () => {
           ログイン
         </Button>
       </form>
-      <p className="mt-4 text-sm text-center text-gray-600">
-        アカウントをお持ちでない方は
-        <Link to="/signup" className="text-[#4CAF50] hover:underline">こちら</Link>
-      </p>
+      <div className="mt-4 text-sm text-center space-y-2">
+        <p className="text-gray-600">
+          アカウントをお持ちでない方は
+          <Link to="/signup" className="text-[#4CAF50] hover:underline">こちら</Link>
+        </p>
+        <p className="text-gray-600">
+          パスワードをお忘れの方は
+          <Link to="/password-reset" className="text-[#4CAF50] hover:underline">こちら</Link>
+        </p>
+      </div>
     </AuthLayout>
   );
 };

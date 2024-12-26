@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase';
 import { AuthLayout } from './AuthLayout';
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from './ui/input';
+import { Button } from './ui/button';
 import { ErrorMessage } from './ErrorMessage';
-import { validateEmail } from '@/utils/validation';
+import { validateEmail } from '../utils/validation';
 
 const PasswordReset: React.FC = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,11 +37,26 @@ const PasswordReset: React.FC = () => {
     <AuthLayout title="パスワードリセット">
       <ErrorMessage message={error} />
       {success ? (
-        <p className="text-green-600 mb-4">パスワードリセットメールを送信しました。メールをご確認ください。</p>
+        <div className="text-center space-y-4">
+          <p className="text-green-600">
+            パスワードリセットメールを送信しました。メールをご確認ください。
+          </p>
+          <p className="text-sm text-gray-600">
+            メールに記載されたリンクからパスワードの再設定を行ってください。
+          </p>
+          <Button
+            onClick={() => navigate('/login')}
+            className="w-full bg-[#4CAF50] text-white py-2 px-4 rounded-md hover:bg-[#45a049] transition duration-300"
+          >
+            ログイン画面へ戻る
+          </Button>
+        </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              登録済みのメールアドレス
+            </label>
             <Input
               type="email"
               id="email"

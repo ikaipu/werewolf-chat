@@ -5,6 +5,7 @@ import { useStore } from '../store/useStore';
 import { useUser } from '../hooks/useUser';
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { sendEmailVerification } from 'firebase/auth';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,8 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const { lastAccessedRoomId } = useStore();
   const [lastAccessedRoom, setLastAccessedRoom] = useState<{ id: string; name: string } | null>(null);
+  const [verificationError, setVerificationError] = useState('');
+  const [verificationSent, setVerificationSent] = useState(false);
 
   useEffect(() => {
     const fetchLastAccessedRoom = async () => {
@@ -47,8 +50,62 @@ const Home: React.FC = () => {
     navigate('/login');
   };
 
+  const handleResendVerification = async () => {
+    if (!auth.currentUser) return;
+    try {
+      await sendEmailVerification(auth.currentUser);
+      setVerificationSent(true);
+      setVerificationError('');
+    } catch (error) {
+      setVerificationError('メールの再送信に失敗しました。しばらく待ってから再試行してください。');
+      console.error('Email verification error:', error);
+    }
+  };
+
   if (isLoading) {
     return <div>読み込み中...</div>;
+  }
+
+  if (auth.currentUser && !auth.currentUser.emailVerified) {
+    return (
+      <div className="min-h-screen bg-[#FFF8E1] p-4">
+        <div className="container mx-auto max-w-md">
+          <Card className="bg-white shadow-md">
+            <CardHeader>
+              <CardTitle className="text-[#4CAF50]">メール確認が必要です</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-600">
+                メールアドレスの確認が完了していません。
+                確認メールのリンクをクリックして、メールアドレスの確認を完了してください。
+              </p>
+              {verificationError && (
+                <p className="text-red-500">{verificationError}</p>
+              )}
+              {verificationSent ? (
+                <p className="text-green-600">
+                  確認メールを送信しました。メールをご確認ください。
+                </p>
+              ) : (
+                <Button
+                  onClick={handleResendVerification}
+                  className="w-full bg-[#4CAF50] text-white hover:bg-[#45a049]"
+                >
+                  確認メールを再送信
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                className="w-full border-[#4CAF50] text-[#4CAF50] hover:bg-[#E8F5E9]"
+                onClick={handleLogout}
+              >
+                <LogOut className="mr-2 h-4 w-4" /> ログアウト
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   return (

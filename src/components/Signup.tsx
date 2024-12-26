@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createUserWithEmailAndPassword, AuthError } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification, AuthError } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { useStore } from '../store/useStore';
@@ -14,6 +14,7 @@ const Signup: React.FC = () => {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
+  const [verificationSent, setVerificationSent] = useState(false);
   const navigate = useNavigate();
   const { setUserId } = useStore();
 
@@ -26,8 +27,10 @@ const Signup: React.FC = () => {
         username: username,
         email: email,
       });
+      // メール確認を送信
+      await sendEmailVerification(userCredential.user);
+      setVerificationSent(true);
       setUserId(userCredential.user.uid);
-      navigate('/');
     } catch (err) {
       const authError = err as AuthError;
       setError(`サインアップに失敗しました: ${authError.code}`);
@@ -38,7 +41,23 @@ const Signup: React.FC = () => {
   return (
     <AuthLayout title="どうぶつチャット">
       {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      {verificationSent ? (
+        <div className="text-center space-y-4">
+          <p className="text-green-600">
+            確認メールを送信しました。メールをご確認ください。
+          </p>
+          <p className="text-sm text-gray-600">
+            メールのリンクをクリックして確認を完了してください。
+          </p>
+          <Button
+            onClick={() => navigate('/login')}
+            className="bg-[#4CAF50] text-white py-2 px-4 rounded-md hover:bg-[#45a049] transition duration-300"
+          >
+            ログイン画面へ
+          </Button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">ユーザー名</label>
           <Input
@@ -82,7 +101,8 @@ const Signup: React.FC = () => {
           <UserPlus className="mr-2" size={18} />
           サインアップ
         </Button>
-      </form>
+        </form>
+      )}
       <p className="mt-4 text-sm text-center text-gray-600">
         すでにアカウントをお持ちの方は
         <Link to="/login" className="text-[#4CAF50] hover:underline">こちら</Link>

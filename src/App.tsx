@@ -6,6 +6,7 @@ import Home from './components/Home';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import ChatRoom from './components/ChatRoom';
+import PasswordReset from './components/PasswordReset';
 import { useStore } from './store/useStore';
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
         <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/" />} />
         <Route path="/chat/:roomId" element={user ? <ChatRoom /> : <Navigate to="/login" />} />
+        <Route path="/password-reset" element={!user ? <PasswordReset /> : <Navigate to="/" />} />
       </Routes>
     </Router>
   );
