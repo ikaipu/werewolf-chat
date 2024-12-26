@@ -250,8 +250,10 @@ const ChatRoom: React.FC = () => {
     }
   };
 
-  const copyRoomLink = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/chat/${roomId}`);
+  const copyRoomId = () => {
+    if (roomId) {
+      navigator.clipboard.writeText(roomId);
+    }
   };
 
   const formatTimestamp = (timestamp: Timestamp) => {
@@ -275,9 +277,9 @@ const ChatRoom: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2">
                 <CardTitle className="text-lg mb-2 sm:mb-0">ルーム: {roomName}</CardTitle>
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={copyRoomLink} className="bg-white text-[#4CAF50] hover:bg-[#E8F5E9]">
+                  <Button variant="outline" size="sm" onClick={copyRoomId} className="bg-white text-[#4CAF50] hover:bg-[#E8F5E9]">
                     <LinkIcon className="h-4 w-4 mr-1" />
-                    URL
+                    ルームID
                   </Button>
                   <Button variant="destructive" size="sm" onClick={handleLeaveRoom} className="bg-red-500 hover:bg-red-600">
                     <LogOut className="h-4 w-4 mr-1" />
