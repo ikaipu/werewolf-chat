@@ -9,10 +9,11 @@ import { sendEmailVerification } from 'firebase/auth';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, LogOut, User } from "lucide-react";
+import { PlusCircle, LogOut, User, DoorOpen } from "lucide-react";
 
 const Home: React.FC = () => {
   const [roomName, setRoomName] = useState('');
+  const [roomId, setRoomId] = useState('');
   const { userId } = useStore();
   const { userData, isLoading } = useUser();
   const navigate = useNavigate();
@@ -135,7 +136,8 @@ const Home: React.FC = () => {
           </Card>
         )}
         
-        <Card className="mb-6 bg-white shadow-md">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <Card className="bg-white shadow-md">
           <CardHeader>
             <CardTitle className="text-[#4CAF50]">新しいルームを作成</CardTitle>
           </CardHeader>
@@ -156,7 +158,35 @@ const Home: React.FC = () => {
               </Button>
             </form>
           </CardContent>
-        </Card>
+          </Card>
+          <Card className="bg-white shadow-md">
+            <CardHeader>
+              <CardTitle className="text-[#4CAF50]">ルームに参加</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                if (roomId.trim()) {
+                  navigate(`/chat/${roomId.trim()}`);
+                }
+              }} className="space-y-4">
+                <Input
+                  type="text"
+                  value={roomId}
+                  onChange={(e) => setRoomId(e.target.value)}
+                  placeholder="ルームIDを入力"
+                  className="border-[#4CAF50] focus:ring-[#4CAF50]"
+                />
+                <Button 
+                  type="submit"
+                  className="w-full bg-[#4CAF50] text-white hover:bg-[#45a049]"
+                >
+                  <DoorOpen className="mr-2 h-4 w-4" /> ルームに参加
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
         
         <Button
           variant="outline"
