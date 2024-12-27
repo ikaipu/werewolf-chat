@@ -388,7 +388,7 @@ const ChatRoom: React.FC = () => {
         </DialogContent>
       </Dialog>
       {toast.visible && (
-        <div className="fixed top-4 right-4 bg-[#4CAF50] text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in-down">
+        <div className="fixed top-4 right-4 bg-white text-[#4CAF50] px-4 py-2 rounded-lg shadow-lg animate-fade-in-down border border-[#4CAF50]">
           {toast.message}
         </div>
       )}
