@@ -37,6 +37,7 @@ const useRoomData = (
 ) => {
   const [roomName, setRoomName] = useState("Loading...");
   const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     console.log("useRoomData useEffect triggered", { roomId, userId, currentRoomId });
@@ -48,13 +49,16 @@ const useRoomData = (
 
     if (!roomId) {
       console.log("No roomId", { currentRoomId });
-      if (currentRoomId) {
-        console.log("Redirecting to current room", currentRoomId);
-        navigate(`/chat/${currentRoomId}`);
-      } else {
-        console.log("Redirecting to home");
-        navigate('/');
-      }
+      setError('ルームIDが指定されていません');
+      setTimeout(() => {
+        if (currentRoomId) {
+          console.log("Redirecting to current room", currentRoomId);
+          navigate(`/chat/${currentRoomId}`);
+        } else {
+          console.log("Redirecting to home");
+          navigate('/');
+        }
+      }, 2000);
       return;
     }
 
@@ -64,8 +68,11 @@ const useRoomData = (
         const roomDoc = await getDoc(doc(db, 'rooms', roomId));
         if (!roomDoc.exists()) {
           console.log("Room does not exist, redirecting to home");
+          setError('指定されたルームは存在しません');
           setCurrentRoomId(null);
-          navigate('/');
+          setTimeout(() => {
+            navigate('/');
+          }, 2000);
           return;
         }
 
@@ -96,7 +103,7 @@ const useRoomData = (
     fetchRoomData();
   }, [roomId, navigate, userId, setCurrentRoomId, currentRoomId]);
 
-  return { roomName, showJoinDialog, setShowJoinDialog };
+  return { roomName, showJoinDialog, setShowJoinDialog, error };
 };
 
 const useMessages = (roomId: string | undefined, isParticipant: boolean | null) => {
@@ -158,7 +165,7 @@ const ChatRoom: React.FC = () => {
   const { userId, currentRoomId, setCurrentRoomId } = useStore();
   const [newMessage, setNewMessage] = useState("");
   const [toast, setToast] = useState<{message: string, visible: boolean}>({ message: '', visible: false });
-  const { roomName, showJoinDialog, setShowJoinDialog } = useRoomData(roomId ?? undefined, userId ?? undefined, navigate, setCurrentRoomId, currentRoomId);
+  const { roomName, showJoinDialog, setShowJoinDialog, error } = useRoomData(roomId ?? undefined, userId ?? undefined, navigate, setCurrentRoomId, currentRoomId);
   const { participants, isParticipant } = useParticipants(roomId ?? undefined, userId ?? undefined);
   const { messages, setMessages } = useMessages(roomId, isParticipant);
 
@@ -175,7 +182,6 @@ const ChatRoom: React.FC = () => {
     if (!userData || !roomId || !userId) return;
 
     try {
-      // 参加者として登録
       await setDoc(doc(db, 'rooms', roomId, 'participants', userId), {
         id: userId,
         name: userData.username,
@@ -183,7 +189,6 @@ const ChatRoom: React.FC = () => {
       });
       console.log("Successfully joined room");
 
-      // 参加者リストを即座に更新
       const participantsRef = collection(db, 'rooms', roomId, 'participants');
       const participantsSnapshot = await getDocs(participantsRef);
       const newParticipants = participantsSnapshot.docs.map(doc => ({
@@ -191,10 +196,8 @@ const ChatRoom: React.FC = () => {
         ...doc.data()
       } as Participant));
       
-      // 参加確認
       const isNewParticipant = newParticipants.some(p => p.id === userId);
       if (isNewParticipant) {
-        // メッセージを即座に取得して表示
         const messagesRef = collection(db, 'rooms', roomId, 'messages');
         const q = query(messagesRef, orderBy('timestamp', 'asc'));
         const messagesSnapshot = await getDocs(q);
@@ -277,6 +280,24 @@ const ChatRoom: React.FC = () => {
     }
     return '';
   };
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#FFF8E1] p-4 flex items-center justify-center">
+        <Card className="w-full max-w-md bg-white shadow-md">
+          <CardHeader>
+            <CardTitle className="text-red-500">エラー</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-center text-gray-600">{error}</p>
+            <p className="text-center text-sm text-gray-500 mt-2">
+              ホームページに戻ります...
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading || isParticipant === null) {
     console.log("Still loading data");

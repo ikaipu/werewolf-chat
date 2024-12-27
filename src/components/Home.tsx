@@ -14,6 +14,7 @@ import { PlusCircle, LogOut, User, DoorOpen } from "lucide-react";
 const Home: React.FC = () => {
   const [roomName, setRoomName] = useState('');
   const [roomId, setRoomId] = useState('');
+  const [roomError, setRoomError] = useState('');
   const { userId } = useStore();
   const { userData, isLoading } = useUser();
   const navigate = useNavigate();
@@ -165,11 +166,20 @@ const Home: React.FC = () => {
               <CardTitle className="text-[#4CAF50]">ルームに参加</CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={(e) => {
+              <form onSubmit={async (e) => {
                 e.preventDefault();
-                if (roomId.trim()) {
-                  navigate(`/chat/${roomId.trim()}`);
+                setRoomError('');
+                if (!roomId.trim()) {
+                  setRoomError('ルームIDを入力してください');
+                  return;
                 }
+                const roomRef = doc(db, 'rooms', roomId.trim());
+                const roomDoc = await getDoc(roomRef);
+                if (!roomDoc.exists()) {
+                  setRoomError('指定されたルームが存在しません');
+                  return;
+                }
+                navigate(`/chat/${roomId.trim()}`);
               }} className="space-y-4">
                 <Input
                   type="text"
@@ -178,6 +188,9 @@ const Home: React.FC = () => {
                   placeholder="ルームIDを入力"
                   className="border-[#4CAF50] focus:ring-[#4CAF50]"
                 />
+                {roomError && (
+                  <p className="text-red-500 text-sm">{roomError}</p>
+                )}
                 <Button 
                   type="submit"
                   className="w-full bg-[#4CAF50] text-white hover:bg-[#45a049]"
