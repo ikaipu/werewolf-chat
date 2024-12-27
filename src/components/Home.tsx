@@ -136,29 +136,30 @@ const Home: React.FC = () => {
           </Card>
         )}
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="space-y-6 mb-6">
           <Card className="bg-white shadow-md">
-          <CardHeader>
-            <CardTitle className="text-[#4CAF50]">新しいルームを作成</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleCreateRoom} className="space-y-4">
-              <Input
-                type="text"
-                value={roomName}
-                onChange={(e) => setRoomName(e.target.value)}
-                placeholder="例: キリンの部屋"
-                className="border-[#4CAF50] focus:ring-[#4CAF50]"
-              />
-              <Button 
-                type="submit"
-                className="w-full bg-[#4CAF50] text-white hover:bg-[#45a049]"
-              >
-                <PlusCircle className="mr-2 h-4 w-4" /> ルームを作成
-              </Button>
-            </form>
-          </CardContent>
+            <CardHeader>
+              <CardTitle className="text-[#4CAF50]">新しいルームを作成</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreateRoom} className="space-y-4">
+                <Input
+                  type="text"
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                  placeholder="例: キリンの部屋"
+                  className="border-[#4CAF50] focus:ring-[#4CAF50]"
+                />
+                <Button 
+                  type="submit"
+                  className="w-full bg-[#4CAF50] text-white hover:bg-[#45a049]"
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" /> ルームを作成
+                </Button>
+              </form>
+            </CardContent>
           </Card>
+
           <Card className="bg-white shadow-md">
             <CardHeader>
               <CardTitle className="text-[#4CAF50]">ルームに参加</CardTitle>
