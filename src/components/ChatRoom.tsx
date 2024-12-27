@@ -157,7 +157,7 @@ const ChatRoom: React.FC = () => {
   const { userData, isLoading } = useUser();
   const { userId, currentRoomId, setCurrentRoomId } = useStore();
   const [newMessage, setNewMessage] = useState("");
-  const [showCopyFeedback, setShowCopyFeedback] = useState<'id' | 'url' | null>(null);
+  const [toast, setToast] = useState<{message: string, visible: boolean}>({ message: '', visible: false });
   const { roomName, showJoinDialog, setShowJoinDialog } = useRoomData(roomId ?? undefined, userId ?? undefined, navigate, setCurrentRoomId, currentRoomId);
   const { participants, isParticipant } = useParticipants(roomId ?? undefined, userId ?? undefined);
   const { messages, setMessages } = useMessages(roomId, isParticipant);
@@ -251,11 +251,15 @@ const ChatRoom: React.FC = () => {
     }
   };
 
+  const showToast = (message: string) => {
+    setToast({ message, visible: true });
+    setTimeout(() => setToast({ message: '', visible: false }), 2000);
+  };
+
   const copyRoomId = () => {
     if (roomId) {
       navigator.clipboard.writeText(roomId);
-      setShowCopyFeedback('id');
-      setTimeout(() => setShowCopyFeedback(null), 2000);
+      showToast('ルームIDをコピーしました！');
     }
   };
 
@@ -263,8 +267,7 @@ const ChatRoom: React.FC = () => {
     if (roomId) {
       const url = `${window.location.origin}/chat/${roomId}`;
       navigator.clipboard.writeText(url);
-      setShowCopyFeedback('url');
-      setTimeout(() => setShowCopyFeedback(null), 2000);
+      showToast('URLをコピーしました！');
     }
   };
 
@@ -297,7 +300,7 @@ const ChatRoom: React.FC = () => {
                       className="bg-white text-[#4CAF50] hover:bg-[#E8F5E9] relative"
                     >
                       <LinkIcon className="h-4 w-4 mr-1" />
-                      {showCopyFeedback === 'id' ? "IDをコピーしました！" : "ルームID"}
+                      ルームID
                     </Button>
                     <Button 
                       variant="outline" 
@@ -306,7 +309,7 @@ const ChatRoom: React.FC = () => {
                       className="bg-white text-[#4CAF50] hover:bg-[#E8F5E9] relative"
                     >
                       <LinkIcon className="h-4 w-4 mr-1" />
-                      {showCopyFeedback === 'url' ? "URLをコピーしました！" : "URL"}
+                      URL
                     </Button>
                   </div>
                   <Button variant="destructive" size="sm" onClick={handleLeaveRoom} className="bg-red-500 hover:bg-red-600">
@@ -384,6 +387,11 @@ const ChatRoom: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {toast.visible && (
+        <div className="fixed bottom-4 right-4 bg-[#4CAF50] text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300">
+          {toast.message}
+        </div>
+      )}
     </>
   );
 };
