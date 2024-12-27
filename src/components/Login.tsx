@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { signInWithEmailAndPassword, AuthError } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useStore } from '../store/useStore';
@@ -15,13 +15,16 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const { setUserId } = useStore();
 
+  const location = useLocation();
+  const from = (location.state as { from?: string })?.from || '/';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       setUserId(userCredential.user.uid);
-      navigate('/');
+      navigate(from);
     } catch (err) {
       const authError = err as AuthError;
       setError(`ログインに失敗しました: ${authError.code} - ${authError.message}`);

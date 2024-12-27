@@ -157,7 +157,7 @@ const ChatRoom: React.FC = () => {
   const { userData, isLoading } = useUser();
   const { userId, currentRoomId, setCurrentRoomId } = useStore();
   const [newMessage, setNewMessage] = useState("");
-  const [showCopyFeedback, setShowCopyFeedback] = useState(false);
+  const [showCopyFeedback, setShowCopyFeedback] = useState<'id' | 'url' | null>(null);
   const { roomName, showJoinDialog, setShowJoinDialog } = useRoomData(roomId ?? undefined, userId ?? undefined, navigate, setCurrentRoomId, currentRoomId);
   const { participants, isParticipant } = useParticipants(roomId ?? undefined, userId ?? undefined);
   const { messages, setMessages } = useMessages(roomId, isParticipant);
@@ -254,8 +254,17 @@ const ChatRoom: React.FC = () => {
   const copyRoomId = () => {
     if (roomId) {
       navigator.clipboard.writeText(roomId);
-      setShowCopyFeedback(true);
-      setTimeout(() => setShowCopyFeedback(false), 2000);
+      setShowCopyFeedback('id');
+      setTimeout(() => setShowCopyFeedback(null), 2000);
+    }
+  };
+
+  const copyRoomUrl = () => {
+    if (roomId) {
+      const url = `${window.location.origin}/chat/${roomId}`;
+      navigator.clipboard.writeText(url);
+      setShowCopyFeedback('url');
+      setTimeout(() => setShowCopyFeedback(null), 2000);
     }
   };
 
@@ -280,15 +289,26 @@ const ChatRoom: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2">
                 <CardTitle className="text-lg mb-2 sm:mb-0">ルーム: {roomName}</CardTitle>
                 <div className="flex flex-wrap gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={copyRoomId} 
-                    className="bg-white text-[#4CAF50] hover:bg-[#E8F5E9] relative"
-                  >
-                    <LinkIcon className="h-4 w-4 mr-1" />
-                    {showCopyFeedback ? "コピーしました！" : "ルームID"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={copyRoomId} 
+                      className="bg-white text-[#4CAF50] hover:bg-[#E8F5E9] relative"
+                    >
+                      <LinkIcon className="h-4 w-4 mr-1" />
+                      {showCopyFeedback === 'id' ? "IDをコピーしました！" : "ルームID"}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={copyRoomUrl} 
+                      className="bg-white text-[#4CAF50] hover:bg-[#E8F5E9] relative"
+                    >
+                      <LinkIcon className="h-4 w-4 mr-1" />
+                      {showCopyFeedback === 'url' ? "URLをコピーしました！" : "URL"}
+                    </Button>
+                  </div>
                   <Button variant="destructive" size="sm" onClick={handleLeaveRoom} className="bg-red-500 hover:bg-red-600">
                     <LogOut className="h-4 w-4 mr-1" />
                     退出
