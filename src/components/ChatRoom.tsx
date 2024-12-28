@@ -76,7 +76,10 @@ const useRoomData = (
           return;
         }
 
-        setRoomName(roomDoc.data().name);
+        const roomData = roomDoc.data();
+        setRoomName(roomData.name);
+        // ルームが存在する場合、まずcurrentRoomIdを設定
+        setCurrentRoomId(roomId);
 
         const participantsSnapshot = await getDocs(collection(db, 'rooms', roomId, 'participants'));
         const participantsData = participantsSnapshot.docs.map(doc => ({
@@ -89,9 +92,6 @@ const useRoomData = (
         if (!isParticipant) {
           console.log("User is not a participant, showing join dialog");
           setShowJoinDialog(true);
-        } else {
-          console.log("User is a participant, setting current room id");
-          setCurrentRoomId(roomId);
         }
       } catch (error) {
         console.error("Error fetching room data: ", error);
@@ -182,6 +182,7 @@ const ChatRoom: React.FC = () => {
     if (!userData || !roomId || !userId) return;
 
     try {
+      // まず参加者として追加
       await setDoc(doc(db, 'rooms', roomId, 'participants', userId), {
         id: userId,
         name: userData.username,
@@ -189,27 +190,18 @@ const ChatRoom: React.FC = () => {
       });
       console.log("Successfully joined room");
 
-      const participantsRef = collection(db, 'rooms', roomId, 'participants');
-      const participantsSnapshot = await getDocs(participantsRef);
-      const newParticipants = participantsSnapshot.docs.map(doc => ({
+      // メッセージを取得
+      const messagesRef = collection(db, 'rooms', roomId, 'messages');
+      const q = query(messagesRef, orderBy('timestamp', 'asc'));
+      const messagesSnapshot = await getDocs(q);
+      const newMessages = messagesSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      } as Participant));
+      } as Message));
+      setMessages(newMessages);
       
-      const isNewParticipant = newParticipants.some(p => p.id === userId);
-      if (isNewParticipant) {
-        const messagesRef = collection(db, 'rooms', roomId, 'messages');
-        const q = query(messagesRef, orderBy('timestamp', 'asc'));
-        const messagesSnapshot = await getDocs(q);
-        const newMessages = messagesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Message));
-        setMessages(newMessages);
-        
-        setCurrentRoomId(roomId);
-        setShowJoinDialog(false);
-      }
+      // ダイアログを閉じる
+      setShowJoinDialog(false);
     } catch (error) {
       console.error("Error joining room: ", error);
     }
