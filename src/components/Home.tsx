@@ -42,8 +42,11 @@ const Home: React.FC = () => {
     if (!roomName.trim() || !userData?.username || !userId) return;
 
     try {
-      const roomId = await createRoom(roomName, userData.username);
-      navigate(`/chat/${roomId}`);
+      const newRoomId = await createRoom(roomName, userData.username);
+      // ルーム作成後、currentRoomIdを設定してから遷移
+      const store = useStore.getState();
+      store.setCurrentRoomId(newRoomId);
+      navigate(`/chat/${newRoomId}`);
     } catch (error) {
       console.error('Error creating room:', error);
     }
@@ -174,13 +177,22 @@ const Home: React.FC = () => {
                   setRoomError(t('home.roomIdRequired'));
                   return;
                 }
-                const roomRef = doc(db, 'rooms', roomId.trim());
-                const roomDoc = await getDoc(roomRef);
-                if (!roomDoc.exists()) {
+                try {
+                  const trimmedRoomId = roomId.trim();
+                  const roomRef = doc(db, 'rooms', trimmedRoomId);
+                  const roomDoc = await getDoc(roomRef);
+                  if (!roomDoc.exists()) {
+                    setRoomError(t('home.roomNotFound'));
+                    return;
+                  }
+                  // ルームが存在する場合、currentRoomIdを設定してから遷移
+                  const store = useStore.getState();
+                  store.setCurrentRoomId(trimmedRoomId);
+                  navigate(`/chat/${trimmedRoomId}`);
+                } catch (error) {
+                  console.error('Error joining room:', error);
                   setRoomError(t('home.roomNotFound'));
-                  return;
                 }
-                navigate(`/chat/${roomId.trim()}`);
               }} className="space-y-4">
                 <Input
                   type="text"
