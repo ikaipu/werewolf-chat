@@ -1,0 +1,84 @@
+{
+  "common": {
+    "login": "ログイン",
+    "signup": "新規登録",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "confirmPassword": "パスワード（確認）",
+    "submit": "送信",
+    "cancel": "キャンセル",
+    "back": "戻る",
+    "error": "エラー",
+    "success": "成功",
+    "loading": "読み込み中..."
+  },
+  "auth": {
+    "loginTitle": "アカウントにログイン",
+    "signupTitle": "アカウント作成",
+    "forgotPassword": "パスワードをお忘れですか？",
+    "resetPassword": "パスワードリセット",
+    "noAccount": "アカウントをお持ちでない方",
+    "haveAccount": "すでにアカウントをお持ちの方",
+    "username": "ユーザー名",
+    "usernamePlaceholder": "ニックネームを入力",
+    "verificationEmailSent": "確認メールを送信しました。メールをご確認ください。",
+    "verificationEmailInstructions": "メールのリンクをクリックして確認を完了してください。",
+    "backToLogin": "ログイン画面へ",
+    "invalidEmail": "有効なメールアドレスを入力してください",
+    "resetEmailError": "パスワードリセットメールの送信に失敗しました",
+    "resetEmailSent": "パスワードリセットメールを送信しました。メールをご確認ください。",
+    "resetEmailInstructions": "メールに記載されたリンクからパスワードの再設定を行ってください。",
+    "registeredEmail": "登録済みのメールアドレス",
+    "sendResetEmail": "パスワードリセットメールを送信"
+  },
+  "home": {
+    "welcome": "ようこそ",
+    "createRoom": "ルーム作成",
+    "joinRoom": "ルームに参加",
+    "logout": "ログアウト",
+    "title": "どうぶつチャット",
+    "loading": "読み込み中...",
+    "lastRoom": "最後に参加したルーム",
+    "createNewRoom": "新しいルームを作成",
+    "roomNamePlaceholder": "例: キリンの部屋",
+    "joinRoomTitle": "ルームに参加",
+    "enterRoomId": "ルームIDを入力",
+    "roomIdRequired": "ルームIDを入力してください",
+    "roomNotFound": "指定されたルームが存在しません",
+    "emailVerification": {
+      "title": "メール確認が必要です",
+      "message": "メールアドレスの確認が完了していません。確認メールのリンクをクリックして、メールアドレスの確認を完了してください。",
+      "resend": "確認メールを再送信",
+      "sent": "確認メールを送信しました。メールをご確認ください。",
+      "error": "メールの再送信に失敗しました。しばらく待ってから再試行してください。"
+    }
+  },
+  "chat": {
+    "participants": "参加者",
+    "send": "送信",
+    "messagePlaceholder": "メッセージを入力...",
+    "leave": "ルームを退出",
+    "room": "ルーム",
+    "roomId": "ルームID",
+    "url": "URL",
+    "exit": "退出",
+    "exitAll": "全員退出",
+    "you": "(あなた)",
+    "error": "エラー",
+    "returningToHome": "ホームページに戻ります...",
+    "noRoomId": "ルームIDが指定されていません",
+    "roomNotFound": "指定されたルームは存在しません",
+    "joinRoom": "ルームに参加",
+    "joinRoomConfirm": "このルームに参加しますか？",
+    "cancel": "キャンセル",
+    "join": "参加する",
+    "copied": {
+      "roomId": "ルームIDをコピーしました！",
+      "url": "URLをコピーしました！"
+    }
+  },
+  "language": {
+    "en": "English",
+    "ja": "日本語"
+  }
+}

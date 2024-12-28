@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
 import { createRoom } from '../utils/roomUtils';
 import { useStore } from '../store/useStore';
@@ -6,12 +7,13 @@ import { useUser } from '../hooks/useUser';
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { sendEmailVerification } from 'firebase/auth';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
 import { PlusCircle, LogOut, User, DoorOpen } from "lucide-react";
 
 const Home: React.FC = () => {
+  const { t } = useTranslation();
   const [roomName, setRoomName] = useState('');
   const [roomId, setRoomId] = useState('');
   const [roomError, setRoomError] = useState('');
@@ -43,7 +45,7 @@ const Home: React.FC = () => {
       const roomId = await createRoom(roomName, userData.username);
       navigate(`/chat/${roomId}`);
     } catch (error) {
-      console.error('ルーム作成中にエラーが発生しました:', error);
+      console.error('Error creating room:', error);
     }
   };
 
@@ -59,13 +61,13 @@ const Home: React.FC = () => {
       setVerificationSent(true);
       setVerificationError('');
     } catch (error) {
-      setVerificationError('メールの再送信に失敗しました。しばらく待ってから再試行してください。');
+      setVerificationError(t('home.emailVerification.error'));
       console.error('Email verification error:', error);
     }
   };
 
   if (isLoading) {
-    return <div>読み込み中...</div>;
+    return <div>{t('home.loading')}</div>;
   }
 
   if (auth.currentUser && !auth.currentUser.emailVerified) {
@@ -74,26 +76,25 @@ const Home: React.FC = () => {
         <div className="container mx-auto max-w-md">
           <Card className="bg-white shadow-md">
             <CardHeader>
-              <CardTitle className="text-[#4CAF50]">メール確認が必要です</CardTitle>
+              <CardTitle className="text-[#4CAF50]">{t('home.emailVerification.title')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-gray-600">
-                メールアドレスの確認が完了していません。
-                確認メールのリンクをクリックして、メールアドレスの確認を完了してください。
+                {t('home.emailVerification.message')}
               </p>
               {verificationError && (
                 <p className="text-red-500">{verificationError}</p>
               )}
               {verificationSent ? (
                 <p className="text-green-600">
-                  確認メールを送信しました。メールをご確認ください。
+                  {t('home.emailVerification.sent')}
                 </p>
               ) : (
                 <Button
                   onClick={handleResendVerification}
                   className="w-full bg-[#4CAF50] text-white hover:bg-[#45a049]"
                 >
-                  確認メールを再送信
+                  {t('home.emailVerification.resend')}
                 </Button>
               )}
               <Button
@@ -101,7 +102,7 @@ const Home: React.FC = () => {
                 className="w-full border-[#4CAF50] text-[#4CAF50] hover:bg-[#E8F5E9]"
                 onClick={handleLogout}
               >
-                <LogOut className="mr-2 h-4 w-4" /> ログアウト
+                <LogOut className="mr-2 h-4 w-4" /> {t('home.logout')}
               </Button>
             </CardContent>
           </Card>
@@ -114,7 +115,7 @@ const Home: React.FC = () => {
     <div className="min-h-screen bg-[#FFF8E1] p-4">
       <div className="container mx-auto max-w-md">
         <div className="flex justify-between items-center mb-6 bg-[#4CAF50] text-white p-4 rounded-lg shadow-md">
-          <h1 className="text-2xl font-bold">どうぶつチャット</h1>
+          <h1 className="text-2xl font-bold">{t('home.title')}</h1>
           <div className="flex items-center space-x-2 text-sm">
             <User className="h-4 w-4" />
             <span>{userData?.username || 'Anonymous'}</span>
@@ -124,7 +125,7 @@ const Home: React.FC = () => {
         {lastAccessedRoom && (
           <Card className="mb-6 bg-white shadow-md">
             <CardHeader>
-              <CardTitle className="text-[#4CAF50]">最後に参加したルーム</CardTitle>
+              <CardTitle className="text-[#4CAF50]">{t('home.lastRoom')}</CardTitle>
             </CardHeader>
             <CardContent>
               <Link 
@@ -140,7 +141,7 @@ const Home: React.FC = () => {
         <div className="space-y-6 mb-6">
           <Card className="bg-white shadow-md">
             <CardHeader>
-              <CardTitle className="text-[#4CAF50]">新しいルームを作成</CardTitle>
+              <CardTitle className="text-[#4CAF50]">{t('home.createNewRoom')}</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreateRoom} className="space-y-4">
@@ -148,14 +149,14 @@ const Home: React.FC = () => {
                   type="text"
                   value={roomName}
                   onChange={(e) => setRoomName(e.target.value)}
-                  placeholder="例: キリンの部屋"
+                  placeholder={t('home.roomNamePlaceholder')}
                   className="border-[#4CAF50] focus:ring-[#4CAF50]"
                 />
                 <Button 
                   type="submit"
                   className="w-full bg-[#4CAF50] text-white hover:bg-[#45a049]"
                 >
-                  <PlusCircle className="mr-2 h-4 w-4" /> ルームを作成
+                  <PlusCircle className="mr-2 h-4 w-4" /> {t('home.createRoom')}
                 </Button>
               </form>
             </CardContent>
@@ -163,20 +164,20 @@ const Home: React.FC = () => {
 
           <Card className="bg-white shadow-md">
             <CardHeader>
-              <CardTitle className="text-[#4CAF50]">ルームに参加</CardTitle>
+              <CardTitle className="text-[#4CAF50]">{t('home.joinRoomTitle')}</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 setRoomError('');
                 if (!roomId.trim()) {
-                  setRoomError('ルームIDを入力してください');
+                  setRoomError(t('home.roomIdRequired'));
                   return;
                 }
                 const roomRef = doc(db, 'rooms', roomId.trim());
                 const roomDoc = await getDoc(roomRef);
                 if (!roomDoc.exists()) {
-                  setRoomError('指定されたルームが存在しません');
+                  setRoomError(t('home.roomNotFound'));
                   return;
                 }
                 navigate(`/chat/${roomId.trim()}`);
@@ -185,7 +186,7 @@ const Home: React.FC = () => {
                   type="text"
                   value={roomId}
                   onChange={(e) => setRoomId(e.target.value)}
-                  placeholder="ルームIDを入力"
+                  placeholder={t('home.enterRoomId')}
                   className="border-[#4CAF50] focus:ring-[#4CAF50]"
                 />
                 {roomError && (
@@ -195,7 +196,7 @@ const Home: React.FC = () => {
                   type="submit"
                   className="w-full bg-[#4CAF50] text-white hover:bg-[#45a049]"
                 >
-                  <DoorOpen className="mr-2 h-4 w-4" /> ルームに参加
+                  <DoorOpen className="mr-2 h-4 w-4" /> {t('home.joinRoom')}
                 </Button>
               </form>
             </CardContent>
@@ -207,7 +208,7 @@ const Home: React.FC = () => {
           className="w-full border-[#4CAF50] text-[#4CAF50] hover:bg-[#E8F5E9]"
           onClick={handleLogout}
         >
-          <LogOut className="mr-2 h-4 w-4" /> ログアウト
+          <LogOut className="mr-2 h-4 w-4" /> {t('home.logout')}
         </Button>
       </div>
     </div>

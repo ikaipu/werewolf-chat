@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { signInWithEmailAndPassword, AuthError } from 'firebase/auth';
 import { auth } from '../firebase';
@@ -14,6 +15,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { setUserId } = useStore();
+  const { t } = useTranslation();
 
   const location = useLocation();
   const from = (location.state as { from?: string })?.from || '/';
@@ -27,17 +29,17 @@ const Login: React.FC = () => {
       navigate(from);
     } catch (err) {
       const authError = err as AuthError;
-      setError(`ログインに失敗しました: ${authError.code} - ${authError.message}`);
+      setError(`${t('common.error')}: ${authError.code} - ${authError.message}`);
       console.error('Login error:', authError);
     }
   };
 
   return (
-    <AuthLayout title="どうぶつチャット">
+    <AuthLayout title={t('auth.loginTitle')}>
       {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">{t('common.email')}</label>
           <Input
             type="email"
             id="email"
@@ -49,7 +51,7 @@ const Login: React.FC = () => {
           />
         </div>
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">{t('common.password')}</label>
           <Input
             type="password"
             id="password"
@@ -65,17 +67,17 @@ const Login: React.FC = () => {
           className="w-full bg-[#4CAF50] text-white py-2 px-4 rounded-md hover:bg-[#45a049] transition duration-300 flex items-center justify-center"
         >
           <LogIn className="mr-2" size={18} />
-          ログイン
+          {t('common.login')}
         </Button>
       </form>
       <div className="mt-4 text-sm text-center space-y-2">
         <p className="text-gray-600">
-          アカウントをお持ちでない方は
-          <Link to="/signup" className="text-[#4CAF50] hover:underline">こちら</Link>
+          {t('auth.noAccount')}{' '}
+          <Link to="/signup" className="text-[#4CAF50] hover:underline">{t('common.signup')}</Link>
         </p>
         <p className="text-gray-600">
-          パスワードをお忘れの方は
-          <Link to="/password-reset" className="text-[#4CAF50] hover:underline">こちら</Link>
+          {t('auth.forgotPassword')}{' '}
+          <Link to="/password-reset" className="text-[#4CAF50] hover:underline">{t('auth.resetPassword')}</Link>
         </p>
       </div>
     </AuthLayout>

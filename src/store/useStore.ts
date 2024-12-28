@@ -6,10 +6,12 @@ interface AppState {
   currentRoomId: string | null;
   lastAccessedRoomId: string | null;
   isEmailVerified: boolean;
+  language: string;
   setUserId: (id: string | null) => void;
   setCurrentRoomId: (id: string | null) => void;
   setLastAccessedRoomId: (id: string | null) => void;
   setIsEmailVerified: (verified: boolean) => void;
+  setLanguage: (lang: string) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -17,10 +19,15 @@ export const useStore = create<AppState>((set) => ({
   currentRoomId: null,
   lastAccessedRoomId: null,
   isEmailVerified: false,
+  language: localStorage.getItem('language') || 'en',
   setUserId: (id) => set({ userId: id }),
   setCurrentRoomId: (id) => set({ currentRoomId: id }),
   setLastAccessedRoomId: (id) => set({ lastAccessedRoomId: id }),
   setIsEmailVerified: (verified) => set({ isEmailVerified: verified }),
+  setLanguage: (lang) => {
+    localStorage.setItem('language', lang);
+    set({ language: lang });
+  },
 }));
 
 // ユーザーの認証状態を監視し、ストアを更新する

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase';
@@ -9,6 +10,7 @@ import { ErrorMessage } from './ErrorMessage';
 import { validateEmail } from '../utils/validation';
 
 const PasswordReset: React.FC = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -20,7 +22,7 @@ const PasswordReset: React.FC = () => {
     setSuccess(false);
 
     if (!validateEmail(email)) {
-      setError('有効なメールアドレスを入力してください。');
+      setError(t('auth.invalidEmail'));
       return;
     }
 
@@ -28,34 +30,34 @@ const PasswordReset: React.FC = () => {
       await sendPasswordResetEmail(auth, email);
       setSuccess(true);
     } catch (err) {
-      setError('パスワードリセットメールの送信に失敗しました。');
+      setError(t('auth.resetEmailError'));
       console.error('Password reset error:', err);
     }
   };
 
   return (
-    <AuthLayout title="パスワードリセット">
+    <AuthLayout title={t('auth.resetPassword')}>
       <ErrorMessage message={error} />
       {success ? (
         <div className="text-center space-y-4">
           <p className="text-green-600">
-            パスワードリセットメールを送信しました。メールをご確認ください。
+            {t('auth.resetEmailSent')}
           </p>
           <p className="text-sm text-gray-600">
-            メールに記載されたリンクからパスワードの再設定を行ってください。
+            {t('auth.resetEmailInstructions')}
           </p>
           <Button
             onClick={() => navigate('/login')}
             className="w-full bg-[#4CAF50] text-white py-2 px-4 rounded-md hover:bg-[#45a049] transition duration-300"
           >
-            ログイン画面へ戻る
+            {t('auth.backToLogin')}
           </Button>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              登録済みのメールアドレス
+              {t('auth.registeredEmail')}
             </label>
             <Input
               type="email"
@@ -71,7 +73,7 @@ const PasswordReset: React.FC = () => {
             type="submit"
             className="w-full bg-[#4CAF50] text-white py-2 px-4 rounded-md hover:bg-[#45a049] transition duration-300"
           >
-            パスワードリセットメールを送信
+            {t('auth.sendResetEmail')}
           </Button>
         </form>
       )}

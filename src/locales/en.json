@@ -1,0 +1,84 @@
+{
+  "common": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "back": "Back",
+    "error": "Error",
+    "success": "Success",
+    "loading": "Loading..."
+  },
+  "auth": {
+    "loginTitle": "Login to Your Account",
+    "signupTitle": "Create New Account",
+    "forgotPassword": "Forgot Password?",
+    "resetPassword": "Reset Password",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "username": "Username",
+    "usernamePlaceholder": "Enter your nickname",
+    "verificationEmailSent": "Verification email has been sent. Please check your inbox.",
+    "verificationEmailInstructions": "Please click the verification link in the email to complete the verification.",
+    "backToLogin": "Back to Login",
+    "invalidEmail": "Please enter a valid email address",
+    "resetEmailError": "Failed to send password reset email",
+    "resetEmailSent": "Password reset email has been sent. Please check your inbox.",
+    "resetEmailInstructions": "Please click the link in the email to reset your password.",
+    "registeredEmail": "Registered Email Address",
+    "sendResetEmail": "Send Password Reset Email"
+  },
+  "home": {
+    "welcome": "Welcome",
+    "createRoom": "Create Room",
+    "joinRoom": "Join Room",
+    "logout": "Logout",
+    "title": "Animal Chat",
+    "loading": "Loading...",
+    "lastRoom": "Last Joined Room",
+    "createNewRoom": "Create New Room",
+    "roomNamePlaceholder": "Example: Giraffe Room",
+    "joinRoomTitle": "Join Room",
+    "enterRoomId": "Enter Room ID",
+    "roomIdRequired": "Room ID is required",
+    "roomNotFound": "Room not found",
+    "emailVerification": {
+      "title": "Email Verification Required",
+      "message": "Your email address has not been verified. Please click the verification link in the email we sent you.",
+      "resend": "Resend Verification Email",
+      "sent": "Verification email sent. Please check your inbox.",
+      "error": "Failed to send verification email. Please wait a moment and try again."
+    }
+  },
+  "chat": {
+    "participants": "Participants",
+    "send": "Send",
+    "messagePlaceholder": "Type a message...",
+    "leave": "Leave Room",
+    "room": "Room",
+    "roomId": "Room ID",
+    "url": "URL",
+    "exit": "Exit",
+    "exitAll": "Exit All",
+    "you": "(You)",
+    "error": "Error",
+    "returningToHome": "Returning to home page...",
+    "noRoomId": "Room ID is not specified",
+    "roomNotFound": "Room not found",
+    "joinRoom": "Join Room",
+    "joinRoomConfirm": "Do you want to join this room?",
+    "cancel": "Cancel",
+    "join": "Join",
+    "copied": {
+      "roomId": "Room ID copied!",
+      "url": "URL copied!"
+    }
+  },
+  "language": {
+    "en": "English",
+    "ja": "日本語"
+  }
+}

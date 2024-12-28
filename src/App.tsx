@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
+import './i18n';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from './firebase';
@@ -8,6 +10,7 @@ import Signup from './components/Signup';
 import ChatRoom from './components/ChatRoom';
 import PasswordReset from './components/PasswordReset';
 import { useStore } from './store/useStore';
+import { LanguageSwitcher } from './components/LanguageSwitcher';
 
 // ログインリダイレクト用のコンポーネント
 const LoginRedirect = () => {
@@ -30,20 +33,25 @@ function App() {
     return () => unsubscribe();
   }, [setUserId]);
 
+  const { t } = useTranslation();
+
   if (loading) {
-    return <div>Loading...</div>;
+    return <div>{t('common.loading')}</div>;
   }
 
   return (
-    <Router>
-      <Routes>
+    <Suspense fallback={<div>{t('common.loading')}</div>}>
+      <Router>
+        <LanguageSwitcher />
+        <Routes>
         <Route path="/" element={user ? <Home /> : <LoginRedirect />} />
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
         <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/" />} />
         <Route path="/chat/:roomId" element={user ? <ChatRoom /> : <LoginRedirect />} />
         <Route path="/password-reset" element={!user ? <PasswordReset /> : <Navigate to="/" />} />
-      </Routes>
-    </Router>
+        </Routes>
+      </Router>
+    </Suspense>
   );
 }
 

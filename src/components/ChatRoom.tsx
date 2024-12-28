@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, onSnapshot, query, orderBy, doc, getDoc, Timestamp, addDoc, serverTimestamp, getDocs, setDoc } from 'firebase/firestore';
 import { useUser } from '../hooks/useUser';
 import { massExit, leaveRoom } from '../utils/roomUtils';
 import { useStore } from '../store/useStore';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from './ui/card';
+import { ScrollArea } from './ui/scroll-area';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Badge } from './ui/badge';
 import { Send, Link as LinkIcon, LogOut } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { NavigateFunction } from 'react-router-dom';
 
 interface Participant {
@@ -33,29 +34,25 @@ const useRoomData = (
   userId: string | undefined,
   navigate: NavigateFunction,
   setCurrentRoomId: (roomId: string | null) => void,
-  currentRoomId: string | null
+  currentRoomId: string | null,
+  t: (key: string) => string
 ) => {
-  const [roomName, setRoomName] = useState("Loading...");
+  const [roomName, setRoomName] = useState(t('common.loading'));
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log("useRoomData useEffect triggered", { roomId, userId, currentRoomId });
     if (!userId) {
-      console.log("No userId, redirecting to login");
       navigate('/login');
       return;
     }
 
     if (!roomId) {
-      console.log("No roomId", { currentRoomId });
-      setError('ルームIDが指定されていません');
+      setError(t('chat.noRoomId'));
       setTimeout(() => {
         if (currentRoomId) {
-          console.log("Redirecting to current room", currentRoomId);
           navigate(`/chat/${currentRoomId}`);
         } else {
-          console.log("Redirecting to home");
           navigate('/');
         }
       }, 2000);
@@ -64,11 +61,9 @@ const useRoomData = (
 
     const fetchRoomData = async () => {
       try {
-        console.log("Fetching room data for", roomId);
         const roomDoc = await getDoc(doc(db, 'rooms', roomId));
         if (!roomDoc.exists()) {
-          console.log("Room does not exist, redirecting to home");
-          setError('指定されたルームは存在しません');
+          setError(t('chat.roomNotFound'));
           setCurrentRoomId(null);
           setTimeout(() => {
             navigate('/');
@@ -78,7 +73,6 @@ const useRoomData = (
 
         const roomData = roomDoc.data();
         setRoomName(roomData.name);
-        // ルームが存在する場合、まずcurrentRoomIdを設定
         setCurrentRoomId(roomId);
 
         const participantsSnapshot = await getDocs(collection(db, 'rooms', roomId, 'participants'));
@@ -88,9 +82,7 @@ const useRoomData = (
         } as Participant));
 
         const isParticipant = participantsData.some(p => p.id === userId);
-        console.log("Is user a participant?", isParticipant);
         if (!isParticipant) {
-          console.log("User is not a participant, showing join dialog");
           setShowJoinDialog(true);
         }
       } catch (error) {
@@ -101,7 +93,7 @@ const useRoomData = (
     };
 
     fetchRoomData();
-  }, [roomId, navigate, userId, setCurrentRoomId, currentRoomId]);
+  }, [roomId, navigate, userId, setCurrentRoomId, currentRoomId, t]);
 
   return { roomName, showJoinDialog, setShowJoinDialog, error };
 };
@@ -159,13 +151,14 @@ const useParticipants = (
 };
 
 const ChatRoom: React.FC = () => {
+  const { t } = useTranslation();
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { userData, isLoading } = useUser();
   const { userId, currentRoomId, setCurrentRoomId } = useStore();
   const [newMessage, setNewMessage] = useState("");
   const [toast, setToast] = useState<{message: string, visible: boolean}>({ message: '', visible: false });
-  const { roomName, showJoinDialog, setShowJoinDialog, error } = useRoomData(roomId ?? undefined, userId ?? undefined, navigate, setCurrentRoomId, currentRoomId);
+  const { roomName, showJoinDialog, setShowJoinDialog, error } = useRoomData(roomId ?? undefined, userId ?? undefined, navigate, setCurrentRoomId, currentRoomId, t);
   const { participants, isParticipant } = useParticipants(roomId ?? undefined, userId ?? undefined);
   const { messages, setMessages } = useMessages(roomId, isParticipant);
 
@@ -175,22 +168,16 @@ const ChatRoom: React.FC = () => {
     }
   }, [isParticipant, setShowJoinDialog]);
 
-  console.log("ChatRoom rendered", { roomId, userId, currentRoomId, isLoading, isParticipant });
-
   const handleJoinRoom = async () => {
-    console.log("Joining room", { userData, roomId, userId });
     if (!userData || !roomId || !userId) return;
 
     try {
-      // まず参加者として追加
       await setDoc(doc(db, 'rooms', roomId, 'participants', userId), {
         id: userId,
         name: userData.username,
         isHost: false
       });
-      console.log("Successfully joined room");
 
-      // メッセージを取得
       const messagesRef = collection(db, 'rooms', roomId, 'messages');
       const q = query(messagesRef, orderBy('timestamp', 'asc'));
       const messagesSnapshot = await getDocs(q);
@@ -200,7 +187,6 @@ const ChatRoom: React.FC = () => {
       } as Message));
       setMessages(newMessages);
       
-      // ダイアログを閉じる
       setShowJoinDialog(false);
     } catch (error) {
       console.error("Error joining room: ", error);
@@ -219,7 +205,7 @@ const ChatRoom: React.FC = () => {
       });
       setNewMessage("");
     } catch (error) {
-      console.error("メッセージ送信中にエラーが発生しました: ", error);
+      console.error("Error sending message: ", error);
     }
   };
 
@@ -230,7 +216,7 @@ const ChatRoom: React.FC = () => {
       await massExit(roomId);
       navigate('/');
     } catch (error) {
-      console.error("一斉退出中にエラーが発生しました: ", error);
+      console.error("Error during mass exit: ", error);
     }
   };
 
@@ -242,7 +228,7 @@ const ChatRoom: React.FC = () => {
       setCurrentRoomId(null);
       navigate('/');
     } catch (error) {
-      console.error("退出中にエラーが発生しました: ", error);
+      console.error("Error leaving room: ", error);
     }
   };
 
@@ -254,7 +240,7 @@ const ChatRoom: React.FC = () => {
   const copyRoomId = () => {
     if (roomId) {
       navigator.clipboard.writeText(roomId);
-      showToast('ルームIDをコピーしました！');
+      showToast(t('chat.copied.roomId'));
     }
   };
 
@@ -262,7 +248,7 @@ const ChatRoom: React.FC = () => {
     if (roomId) {
       const url = `${window.location.origin}/chat/${roomId}`;
       navigator.clipboard.writeText(url);
-      showToast('URLをコピーしました！');
+      showToast(t('chat.copied.url'));
     }
   };
 
@@ -278,12 +264,12 @@ const ChatRoom: React.FC = () => {
       <div className="min-h-screen bg-[#FFF8E1] p-4 flex items-center justify-center">
         <Card className="w-full max-w-md bg-white shadow-md">
           <CardHeader>
-            <CardTitle className="text-red-500">エラー</CardTitle>
+            <CardTitle className="text-red-500">{t('chat.error')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-center text-gray-600">{error}</p>
             <p className="text-center text-sm text-gray-500 mt-2">
-              ホームページに戻ります...
+              {t('chat.returningToHome')}
             </p>
           </CardContent>
         </Card>
@@ -292,8 +278,7 @@ const ChatRoom: React.FC = () => {
   }
 
   if (isLoading || isParticipant === null) {
-    console.log("Still loading data");
-    return <div>読み込み中...</div>;
+    return <div>{t('common.loading')}</div>;
   }
 
   return (
@@ -303,7 +288,7 @@ const ChatRoom: React.FC = () => {
           <Card className="bg-white shadow-md flex flex-col h-[calc(100vh-1rem)]">
             <CardHeader className="bg-[#4CAF50] text-white p-2 sm:p-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2">
-                <CardTitle className="text-lg mb-2 sm:mb-0">ルーム: {roomName}</CardTitle>
+                <CardTitle className="text-lg mb-2 sm:mb-0">{t('chat.room')}: {roomName}</CardTitle>
                 <div className="flex flex-wrap gap-2">
                   <div className="flex gap-2">
                     <Button 
@@ -313,7 +298,7 @@ const ChatRoom: React.FC = () => {
                       className="bg-white text-[#4CAF50] hover:bg-[#E8F5E9] relative"
                     >
                       <LinkIcon className="h-4 w-4 mr-1" />
-                      ルームID
+                      {t('chat.roomId')}
                     </Button>
                     <Button 
                       variant="outline" 
@@ -322,16 +307,16 @@ const ChatRoom: React.FC = () => {
                       className="bg-white text-[#4CAF50] hover:bg-[#E8F5E9] relative"
                     >
                       <LinkIcon className="h-4 w-4 mr-1" />
-                      URL
+                      {t('chat.url')}
                     </Button>
                   </div>
                   <Button variant="destructive" size="sm" onClick={handleLeaveRoom} className="bg-red-500 hover:bg-red-600">
                     <LogOut className="h-4 w-4 mr-1" />
-                    退出
+                    {t('chat.exit')}
                   </Button>
                   <Button variant="destructive" size="sm" onClick={handleMassExit} className="bg-red-500 hover:bg-red-600">
                     <LogOut className="h-4 w-4 mr-1" />
-                    全員退出
+                    {t('chat.exitAll')}
                   </Button>
                 </div>
               </div>
@@ -344,7 +329,7 @@ const ChatRoom: React.FC = () => {
                   >
                     {participant.name}
                     {participant.isHost}
-                    {participant.id === userId && " (あなた)"}
+                    {participant.id === userId && t('chat.you')}
                   </Badge>
                 ))}
               </div>
@@ -368,7 +353,7 @@ const ChatRoom: React.FC = () => {
               <div className="flex w-full items-center space-x-2">
                 <Input
                   type="text"
-                  placeholder="メッセージを入力..."
+                  placeholder={t('chat.messagePlaceholder')}
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
@@ -385,23 +370,23 @@ const ChatRoom: React.FC = () => {
       <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
         <DialogContent className="bg-white sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>ルームに参加しますか？</DialogTitle>
+            <DialogTitle>{t('chat.joinRoom')}</DialogTitle>
             <DialogDescription>
-              "{roomName}" ルームに参加しますか？
+              {t('chat.joinRoomConfirm')} "{roomName}"?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => navigate('/')}>
-              キャンセル
+              {t('chat.cancel')}
             </Button>
             <Button onClick={handleJoinRoom}>
-              参加する
+              {t('chat.join')}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       {toast.visible && (
-        <div className="fixed top-4 right-4 bg-white text-[#4CAF50] px-4 py-2 rounded-lg shadow-lg animate-fade-in-down border border-[#4CAF50]">
+        <div className="fixed top-4 right-4 bg-white text-[#4CAF50] px-4 py-2 rounded-lg shadow-lg animate-fade-in-down border border-[#4CAF50] z-[100]">
           {toast.message}
         </div>
       )}
