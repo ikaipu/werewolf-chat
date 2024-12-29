@@ -54,28 +54,37 @@ const PasswordReset: React.FC = () => {
           </Button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              {t('auth.registeredEmail')}
-            </label>
-            <Input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4CAF50]"
-              placeholder="example@email.com"
-              required
-            />
-          </div>
+        <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('auth.registeredEmail')}
+              </label>
+              <Input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4CAF50]"
+                placeholder="example@email.com"
+                required
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full bg-[#4CAF50] text-white py-2 px-4 rounded-md hover:bg-[#45a049] transition duration-300"
+            >
+              {t('auth.sendResetEmail')}
+            </Button>
+          </form>
           <Button
-            type="submit"
-            className="w-full bg-[#4CAF50] text-white py-2 px-4 rounded-md hover:bg-[#45a049] transition duration-300"
+            onClick={() => navigate('/login')}
+            variant="outline"
+            className="w-full"
           >
-            {t('auth.sendResetEmail')}
+            {t('auth.backToLogin')}
           </Button>
-        </form>
+        </div>
       )}
     </AuthLayout>
   );
