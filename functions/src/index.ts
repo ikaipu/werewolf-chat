@@ -75,14 +75,14 @@ export const updateRoomLastActivityOnJoin = onDocumentCreated({
   await updateLastActivity(roomId);
 });
 
-// 1時間ごとに古いルームをチェックして削除
+// 24時間ごとに古いルームをチェックして削除
 export const cleanupInactiveRooms = onSchedule({
-  schedule: "0 * * * *", // 毎時0分に実行
+  schedule: "0 0 * * *", // 毎日午前0時に実行
   timeoutSeconds: 540, // 9分のタイムアウト
   region: region,
 }, async () => {
   const firestore = admin.firestore();
-  const INACTIVE_THRESHOLD_MINUTES = 60; // 非アクティブと判断する時間（分）
+  const INACTIVE_THRESHOLD_MINUTES = 4320; // 非アクティブと判断する時間（3日 = 72時間 = 4320分）
 
   try {
     // 現在時刻からINACTIVE_THRESHOLD_MINUTES前の時刻を計算
